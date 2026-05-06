@@ -1178,6 +1178,15 @@
         flex-shrink: 0;
       }
 
+      @media (min-width: 768px) {
+        .scan-col-right {
+          display: block !important;
+        }
+        .scan-area {
+          padding: 16px 20px;
+        }
+      }
+
       /* IMPORT PREVIEW */
       .prev-item {
         padding: 10px 12px;
@@ -1226,20 +1235,234 @@
         background: var(--blue-bg);
       }
 
-      @media (min-width: 600px) {
-        .pages,
-        .bottom-nav,
-        .app-header,
-        .fab,
-        .toast {
-          max-width: 480px;
-          left: 50%;
-          right: auto;
-          transform: translateX(-50%);
+      /* ── DESKTOP LAYOUT (≥768px) ── */
+      @media (min-width: 768px) {
+        :root {
+          --sidebar-w: 220px;
         }
-        .sheet-bg .sheet {
-          max-width: 480px;
+
+        /* Header full width */
+        .app-header {
+          left: 0;
+          right: 0;
+          transform: none;
+          max-width: none;
+        }
+
+        /* Sidebar — bottom-nav becomes left sidebar */
+        .bottom-nav {
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+          width: var(--sidebar-w);
+          height: auto;
+          top: var(--header-h);
+          bottom: 0;
+          left: 0;
+          right: auto;
+          border-top: none;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
+          background: #1a1a1a;
+          padding: 12px 0;
+          gap: 2px;
+          transform: none;
+          max-width: none;
+        }
+        .nav-item {
+          flex-direction: row;
+          justify-content: flex-start;
+          padding: 11px 18px;
+          gap: 12px;
+          color: rgba(255, 255, 255, 0.55);
+          border-radius: 0;
+          border-bottom: none;
+          font-size: 14px;
+        }
+        .nav-item:hover {
+          background: rgba(255, 255, 255, 0.06);
+          color: rgba(255, 255, 255, 0.85);
+        }
+        .nav-item.active {
+          background: rgba(255, 255, 255, 0.12);
+          color: #fff;
+        }
+        .nav-icon {
+          font-size: 19px;
+          width: 22px;
+          text-align: center;
+          flex-shrink: 0;
+        }
+        .nav-label {
+          font-size: 13px;
+          font-weight: 500;
+          display: block;
+          color: inherit;
+        }
+        /* Scan button — plain on desktop */
+        .nav-item.scan-btn {
+          margin-top: 0;
+        }
+        .nav-scan-circle {
+          display: none;
+        }
+        .nav-item.scan-btn::before {
+          content: "📷";
+          font-size: 19px;
+          width: 22px;
+          text-align: center;
+        }
+
+        /* Pages offset from sidebar */
+        .pages {
+          left: var(--sidebar-w);
+          bottom: 0;
+          top: var(--header-h);
+          transform: none;
+          max-width: none;
+          right: 0;
+        }
+
+        /* FAB hidden on desktop — use ➕ button at sidebar bottom */
+        .fab {
+          display: none !important;
+        }
+
+        /* Toast — bottom right corner */
+        .toast {
+          left: auto;
+          right: 24px;
+          bottom: 24px;
+          width: auto;
+          max-width: 340px;
+          text-align: left;
+          transform: none;
+        }
+
+        /* Sheets — centered modal on desktop */
+        .sheet-bg {
+          align-items: center;
+          justify-content: center;
+        }
+        .sheet {
+          border-radius: 16px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 88vh;
+          animation: modalIn 0.2s ease;
+          padding-bottom: 0;
+        }
+        @keyframes modalIn {
+          from {
+            opacity: 0;
+            transform: scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .sheet-handle {
+          display: none;
+        }
+
+        /* Stats 4 columns */
+        .stats-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* QR grid more columns */
+        .qr-grid {
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+
+        /* Scan page 2-col on desktop */
+        .scan-area {
+          display: grid;
+          grid-template-columns: 360px 1fr;
+          gap: 20px;
+          align-items: start;
+          max-width: 960px;
           margin: 0 auto;
+        }
+
+        /* Aset card layout tweak */
+        .asset-card-name {
+          font-size: 14px;
+        }
+
+        /* Add button in sidebar bottom */
+        .sidebar-add-btn {
+          display: flex;
+          margin: 8px 12px 0;
+          padding: 10px 14px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          align-items: center;
+          gap: 10px;
+          width: calc(100% - 24px);
+        }
+        .sidebar-add-btn:hover {
+          background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* Demo banner */
+        .demo-banner {
+          margin: 16px 20px 0;
+          border-radius: 10px;
+        }
+
+        /* Pages padding */
+        .page {
+          padding-bottom: 24px;
+        }
+
+        /* Detail sheet wider */
+        #sheet-detail .sheet {
+          max-width: 720px;
+        }
+        #sheet-detail .sheet-body {
+          display: grid;
+          grid-template-columns: 1fr 280px;
+          gap: 20px;
+        }
+
+        /* Riwayat items as table-like rows */
+        .riwayat-item {
+          border-radius: 8px;
+          margin-bottom: 6px;
+        }
+      }
+
+      /* Tablet — mid point */
+      @media (min-width: 768px) and (max-width: 1023px) {
+        :root {
+          --sidebar-w: 64px;
+        }
+        .nav-label {
+          display: none;
+        }
+        .nav-item {
+          justify-content: center;
+          padding: 12px;
+        }
+        .nav-item.scan-btn::before {
+          margin: 0;
+        }
+        .sidebar-add-btn {
+          justify-content: center;
+          padding: 10px;
+        }
+        .sidebar-add-btn span {
+          display: none;
+        }
+        .sidebar-add-btn::before {
+          content: "➕";
+          font-size: 18px;
         }
       }
     </style>
@@ -1465,126 +1688,173 @@
       <!-- ══ SCAN ══ -->
       <div class="page" id="page-scan">
         <div class="scan-area">
-          <div
-            class="scanner-box"
-            id="scan-toggle-box"
-            onclick="toggleCamera()"
-          >
-            <div class="cam-icon">📷</div>
-            <p
-              style="
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--text);
-                margin-bottom: 4px;
-              "
+          <div class="scan-col-left">
+            <div
+              class="scanner-box"
+              id="scan-toggle-box"
+              onclick="toggleCamera()"
             >
-              Scan QR Code Aset
-            </p>
-            <p>Ketuk untuk aktifkan kamera</p>
-          </div>
-          <div
-            id="qr-reader"
-            style="
-              display: none;
-              border-radius: 16px;
-              overflow: hidden;
-              margin-bottom: 12px;
-            "
-          ></div>
-          <div id="cam-stop-btn" style="display: none; margin-bottom: 12px">
-            <button class="btn btn-secondary btn-block" onclick="stopCamera()">
-              ⏹ Stop Kamera
-            </button>
-          </div>
-          <div class="manual-row">
-            <input
-              class="form-input"
-              style="margin: 0"
-              id="manual-scan"
-              placeholder="Atau ketik kode aset..."
-              onkeydown="if (event.key === 'Enter') doManualScan();"
-            />
-            <button class="btn btn-primary" onclick="doManualScan()">
-              Cek
-            </button>
-          </div>
-
-          <!-- RESULT -->
-          <div class="result-card" id="result-card">
-            <div class="result-header">
-              <div class="result-thumb" id="result-thumb">📦</div>
-              <div class="result-meta">
-                <div class="kode" id="result-kode">—</div>
-                <h3 id="result-nama">—</h3>
-                <div class="result-badges">
-                  <span class="badge" id="result-status-badge">—</span>
-                  <span class="badge" id="result-kondisi-badge">—</span>
-                </div>
-              </div>
+              <div class="cam-icon">📷</div>
+              <p
+                style="
+                  font-size: 15px;
+                  font-weight: 600;
+                  color: var(--text);
+                  margin-bottom: 4px;
+                "
+              >
+                Scan QR Code Aset
+              </p>
+              <p>Ketuk untuk aktifkan kamera</p>
             </div>
-            <div class="info-grid">
-              <div class="info-chip">
-                <div class="info-chip-label">Lokasi</div>
-                <div class="info-chip-value" id="r-lokasi">—</div>
-              </div>
-              <div class="info-chip">
-                <div class="info-chip-label">Kategori</div>
-                <div class="info-chip-value" id="r-kat">—</div>
-              </div>
-              <div class="info-chip">
-                <div class="info-chip-label">PJ</div>
-                <div class="info-chip-value" id="r-pj">—</div>
-              </div>
-              <div class="info-chip">
-                <div class="info-chip-label">Scan Terakhir</div>
-                <div class="info-chip-value" id="r-last">—</div>
-              </div>
+            <div
+              id="qr-reader"
+              style="
+                display: none;
+                border-radius: 16px;
+                overflow: hidden;
+                margin-bottom: 12px;
+              "
+            ></div>
+            <div id="cam-stop-btn" style="display: none; margin-bottom: 12px">
+              <button
+                class="btn btn-secondary btn-block"
+                onclick="stopCamera()"
+              >
+                ⏹ Stop Kamera
+              </button>
             </div>
-            <div class="action-section">
-              <label class="form-label">Aksi / Update</label>
-              <select class="form-select" id="action-type">
-                <option value="VERIFIKASI">
-                  ✅ Verifikasi — konfirmasi keberadaan
-                </option>
-                <option value="PINDAH_LOKASI">📍 Pindah Lokasi</option>
-                <option value="PEMINJAMAN">🔑 Peminjaman</option>
-                <option value="PENGEMBALIAN">↩️ Pengembalian</option>
-                <option value="MULAI_MAINTENANCE">🔧 Mulai Maintenance</option>
-                <option value="SELESAI_MAINTENANCE">
-                  ✅ Selesai Maintenance
-                </option>
-                <option value="AUDIT">📋 Audit Periodik</option>
-                <option value="UPDATE_KONDISI">📝 Update Kondisi</option>
-              </select>
-              <label class="form-label">Kondisi</label>
-              <select class="form-select" id="action-kondisi">
-                <option>Baik</option>
-                <option>Kurang Baik</option>
-                <option>Rusak</option>
-              </select>
-              <label class="form-label">Lokasi (jika berubah)</label>
+            <div class="manual-row">
               <input
                 class="form-input"
-                id="action-lokasi"
-                placeholder="Nama lokasi baru..."
+                style="margin: 0"
+                id="manual-scan"
+                placeholder="Atau ketik kode aset..."
+                onkeydown="if (event.key === 'Enter') doManualScan();"
               />
-              <label class="form-label">Catatan</label>
-              <textarea
-                class="form-textarea"
-                id="action-catatan"
-                placeholder="Tambahkan keterangan..."
-              ></textarea>
-              <button class="btn btn-green btn-block" onclick="submitAction()">
-                ✅ Simpan & Update Database
+              <button class="btn btn-primary" onclick="doManualScan()">
+                Cek
               </button>
-              <div style="height: 8px"></div>
-              <button
-                class="btn btn-secondary btn-block btn-sm"
-                onclick="openDetailSheet(currentAssetId)"
+            </div>
+
+            <!-- RESULT -->
+            <div class="result-card" id="result-card">
+              <div class="result-header">
+                <div class="result-thumb" id="result-thumb">📦</div>
+                <div class="result-meta">
+                  <div class="kode" id="result-kode">—</div>
+                  <h3 id="result-nama">—</h3>
+                  <div class="result-badges">
+                    <span class="badge" id="result-status-badge">—</span>
+                    <span class="badge" id="result-kondisi-badge">—</span>
+                  </div>
+                </div>
+              </div>
+              <div class="info-grid">
+                <div class="info-chip">
+                  <div class="info-chip-label">Lokasi</div>
+                  <div class="info-chip-value" id="r-lokasi">—</div>
+                </div>
+                <div class="info-chip">
+                  <div class="info-chip-label">Kategori</div>
+                  <div class="info-chip-value" id="r-kat">—</div>
+                </div>
+                <div class="info-chip">
+                  <div class="info-chip-label">PJ</div>
+                  <div class="info-chip-value" id="r-pj">—</div>
+                </div>
+                <div class="info-chip">
+                  <div class="info-chip-label">Scan Terakhir</div>
+                  <div class="info-chip-value" id="r-last">—</div>
+                </div>
+              </div>
+              <div class="action-section">
+                <label class="form-label">Aksi / Update</label>
+                <select class="form-select" id="action-type">
+                  <option value="VERIFIKASI">
+                    ✅ Verifikasi — konfirmasi keberadaan
+                  </option>
+                  <option value="PINDAH_LOKASI">📍 Pindah Lokasi</option>
+                  <option value="PEMINJAMAN">🔑 Peminjaman</option>
+                  <option value="PENGEMBALIAN">↩️ Pengembalian</option>
+                  <option value="MULAI_MAINTENANCE">
+                    🔧 Mulai Maintenance
+                  </option>
+                  <option value="SELESAI_MAINTENANCE">
+                    ✅ Selesai Maintenance
+                  </option>
+                  <option value="AUDIT">📋 Audit Periodik</option>
+                  <option value="UPDATE_KONDISI">📝 Update Kondisi</option>
+                </select>
+                <label class="form-label">Kondisi</label>
+                <select class="form-select" id="action-kondisi">
+                  <option>Baik</option>
+                  <option>Kurang Baik</option>
+                  <option>Rusak</option>
+                </select>
+                <label class="form-label">Lokasi (jika berubah)</label>
+                <input
+                  class="form-input"
+                  id="action-lokasi"
+                  placeholder="Nama lokasi baru..."
+                />
+                <label class="form-label">Catatan</label>
+                <textarea
+                  class="form-textarea"
+                  id="action-catatan"
+                  placeholder="Tambahkan keterangan..."
+                ></textarea>
+                <button
+                  class="btn btn-green btn-block"
+                  onclick="submitAction()"
+                >
+                  ✅ Simpan & Update Database
+                </button>
+                <div style="height: 8px"></div>
+                <button
+                  class="btn btn-secondary btn-block btn-sm"
+                  onclick="openDetailSheet(currentAssetId)"
+                >
+                  📋 Lihat Timeline Lengkap
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- /scan-col-left -->
+
+          <!-- Desktop: timeline column -->
+          <div class="scan-col-right" style="display: none">
+            <div
+              style="
+                background: var(--surface);
+                border-radius: 16px;
+                padding: 16px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+              "
+            >
+              <div
+                style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--text);
+                  margin-bottom: 14px;
+                "
+                id="desk-tl-title"
               >
-                📋 Lihat Timeline Lengkap
-              </button>
+                Timeline Aset
+              </div>
+              <div id="desk-timeline">
+                <p
+                  style="
+                    text-align: center;
+                    color: var(--text3);
+                    font-size: 13px;
+                    padding: 24px 0;
+                  "
+                >
+                  Scan aset untuk melihat timeline
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1719,6 +1989,14 @@
       </button>
       <button class="nav-item" id="nav-riwayat" onclick="switchPage('riwayat')">
         <span class="nav-icon">📋</span><span class="nav-label">Riwayat</span>
+      </button>
+      <button
+        class="sidebar-add-btn"
+        onclick="openAddSheet()"
+        style="display: none"
+        id="sidebar-add"
+      >
+        <span style="font-size: 18px">➕</span><span>Tambah Aset</span>
       </button>
     </div>
 
@@ -3038,12 +3316,53 @@
         document.getElementById("action-catatan").value = "";
         const thumb = document.getElementById("result-thumb");
         if (a.gdrive) {
-          const url = gdriveUrl(a.gdrive);
-          thumb.style.cssText = "";
-          thumb.outerHTML = `<img class="result-thumb" id="result-thumb" src="${url}" onerror="this.outerHTML='<div class=result-thumb id=result-thumb>📦</div>'"/>`;
+          const url = gdriveUrl(a.gdrive, "w400") + "&t=" + Date.now();
+          const img = document.createElement("img");
+          img.className = "result-thumb";
+          img.id = "result-thumb";
+          img.src = url;
+          img.onerror = function () {
+            this.outerHTML =
+              '<div class="result-thumb" id="result-thumb" style="display:flex;align-items:center;justify-content:center;font-size:24px">📦</div>';
+          };
+          thumb.replaceWith(img);
         }
         toast("📦 " + a.nama);
         card.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        // Desktop: render timeline in right column
+        if (window.innerWidth >= 768) {
+          document.getElementById("desk-tl-title").textContent = a.nama;
+          renderDesktopTimeline(id);
+        }
+      }
+
+      function renderDesktopTimeline(id) {
+        const evs = EVENTS.filter((e) => e.asset_id === id);
+        const el = document.getElementById("desk-timeline");
+        if (!el) return;
+        if (!evs.length) {
+          el.innerHTML =
+            '<p style="text-align:center;color:var(--text3);font-size:13px;padding:16px 0">Belum ada riwayat.</p>';
+          return;
+        }
+        el.innerHTML = evs
+          .slice(0, 12)
+          .map(
+            (
+              ev,
+              i,
+            ) => `<div class="tl-item ${i === 0 ? "tl-first" : "tl-other"}">
+    <div class="tl-left"><div class="tl-dot">${aIcon(ev.type)}</div>${i < evs.length - 1 ? '<div class="tl-line"></div>' : ""}</div>
+    <div class="tl-body">
+      <div class="tl-action">${aLabel(ev.type)}</div>
+      <div class="tl-time">${fFull(ev.timestamp)}</div>
+      ${ev.catatan ? `<div class="tl-note">${esc(ev.catatan)}</div>` : ""}
+      <div class="tl-who">👤${esc(ev.user)}${ev.kondisi ? " · " + esc(ev.kondisi) : ""}${ev.lokasi ? " · 📍" + esc(ev.lokasi) : ""}</div>
+    </div>
+  </div>`,
+          )
+          .join("");
       }
 
       function submitAction() {
@@ -3133,8 +3452,8 @@
         list.innerHTML = arr
           .map(([id, a]) => {
             const thumb = a.gdrive
-              ? `<img class="asset-thumb" src="${gdriveUrl(a.gdrive)}" onerror="this.outerHTML='<div class=asset-thumb>📦</div>'"/>`
-              : `<div class="asset-thumb">📦</div>`;
+              ? `<img class="asset-thumb" src="${gdriveUrl(a.gdrive, "w200")}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><div class="asset-thumb" style="display:none;align-items:center;justify-content:center;font-size:22px">📦</div>`
+              : `<div class="asset-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px">📦</div>`;
             return `<div class="asset-card" onclick="openDetailSheet('${id}')">
       ${thumb}
       <div class="asset-card-body">
@@ -3337,7 +3656,7 @@
           `<span class="badge ${bCls(a.status)}">${esc(a.status) || "Aktif"}</span><span class="badge ${kCls(a.kondisi)}">${esc(a.kondisi) || "Baik"}</span>`;
         // photo
         document.getElementById("d-photo").innerHTML = a.gdrive
-          ? `<img class="detail-photo" src="${gdriveUrl(a.gdrive)}" onerror="this.outerHTML='<div class=detail-photo-ph><div style=font-size:36px>📦</div><div>Foto tidak tersedia</div></div>'">`
+          ? `<img class="detail-photo" src="${gdriveUrl(a.gdrive, "w1200")}&t=${Date.now()}" onerror="this.outerHTML='<div class=detail-photo-ph><div style=font-size:36px>📦</div><div>Foto tidak dapat dimuat — cek link GDrive</div></div>'">`
           : `<div class="detail-photo-ph"><div style="font-size:36px">📦</div><div>Belum ada foto</div></div>`;
         // info
         const fields = [
@@ -3545,9 +3864,30 @@
           }[t] || "#f5f5f5"
         );
       }
-      function gdriveUrl(url) {
-        const m = (url || "").match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        return m ? `https://drive.google.com/uc?export=view&id=${m[1]}` : url;
+      function gdriveUrl(url, size) {
+        if (!url) return "";
+        url = url.trim();
+        // Extract file ID from various Google Drive URL formats
+        let id = null;
+        // Format: /file/d/FILE_ID/
+        const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (m1) id = m1[1];
+        // Format: ?id=FILE_ID or &id=FILE_ID
+        if (!id) {
+          const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          if (m2) id = m2[1];
+        }
+        // Format: /d/FILE_ID (short)
+        if (!id) {
+          const m3 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (m3) id = m3[1];
+        }
+        // Already a direct thumbnail URL
+        if (!id && url.includes("googleusercontent")) return url;
+        if (!id) return url;
+        // Use thumbnail endpoint — lebih andal dari uc?export=view
+        const sz = size || "w800";
+        return `https://drive.google.com/thumbnail?id=${id}&sz=${sz}`;
       }
       function timeAgo(ts) {
         const d = Date.now() - ts;
@@ -3964,6 +4304,20 @@
         const savedUser = localStorage.getItem("rpm_user");
         if (savedUser) CURRENT_USER = savedUser;
         document.getElementById("setup-user").value = CURRENT_USER;
+
+        // Desktop: show sidebar add button, hide FAB
+        const isDesktop = () => window.innerWidth >= 768;
+        function applyLayout() {
+          const desk = isDesktop();
+          const sidebarAdd = document.getElementById("sidebar-add");
+          if (sidebarAdd) sidebarAdd.style.display = desk ? "flex" : "none";
+          // On scan page desktop: wrap scanner + result in one div
+          if (desk) document.body.classList.add("desktop");
+          else document.body.classList.remove("desktop");
+        }
+        applyLayout();
+        window.addEventListener("resize", applyLayout);
+
         if (saved) {
           try {
             initFirebase(JSON.parse(saved));
