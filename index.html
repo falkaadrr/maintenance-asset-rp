@@ -1178,6 +1178,54 @@
         flex-shrink: 0;
       }
 
+      /* IMPORT PREVIEW */
+      .prev-item {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+      }
+      .prev-item:last-child {
+        border-bottom: none;
+      }
+      .prev-item-valid {
+        background: var(--surface);
+      }
+      .prev-item-error {
+        background: #fff8f8;
+      }
+      .prev-item-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+      .prev-item-name {
+        font-weight: 600;
+        color: var(--text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 70%;
+      }
+      .prev-item-kode {
+        font-family: monospace;
+        font-size: 10px;
+        color: var(--text3);
+      }
+      .prev-item-meta {
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .prev-item-err {
+        color: var(--red);
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .drop-zone-active {
+        border-color: var(--blue) !important;
+        background: var(--blue-bg);
+      }
+
       @media (min-width: 600px) {
         .pages,
         .bottom-nav,
@@ -1324,7 +1372,17 @@
               🔲 Lihat QR
             </button>
             <button class="btn btn-secondary btn-block" onclick="exportCSV()">
-              📥 Export CSV
+              📤 Export CSV
+            </button>
+            <button
+              class="btn btn-secondary btn-block"
+              onclick="
+                switchPage('aset');
+                openSheet('sheet-import');
+              "
+              style="grid-column: 1/-1"
+            >
+              📥 Import Data dari CSV
             </button>
           </div>
         </div>
@@ -1380,7 +1438,27 @@
             Tidak Aktif
           </div>
         </div>
-        <div style="height: 10px"></div>
+        <div style="display: flex; gap: 8px; padding: 10px 16px 2px">
+          <button
+            class="btn btn-secondary btn-sm"
+            style="
+              flex: 1;
+              justify-content: center;
+              border: 1.5px dashed var(--border);
+            "
+            onclick="openSheet('sheet-import')"
+          >
+            📥 Import CSV
+          </button>
+          <button
+            class="btn btn-secondary btn-sm"
+            style="flex: 1; justify-content: center"
+            onclick="exportCSV()"
+          >
+            📤 Export CSV
+          </button>
+        </div>
+        <div style="height: 8px"></div>
         <div id="aset-list" style="padding: 0 16px"></div>
       </div>
 
@@ -1982,6 +2060,594 @@
           >
             Lanjut Mode Demo (lokal)
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT CSV SHEET -->
+    <div
+      class="sheet-bg"
+      id="sheet-import"
+      onclick="bgClose('sheet-import', event)"
+    >
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>📥 Import Data Aset dari CSV</h3>
+          <button
+            class="btn btn-secondary btn-sm"
+            onclick="closeSheet('sheet-import')"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="sheet-body">
+          <!-- STEP 1: TEMPLATE -->
+          <div
+            style="
+              background: var(--blue-bg);
+              border-radius: 12px;
+              padding: 12px 14px;
+              margin-bottom: 16px;
+            "
+          >
+            <p
+              style="
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--blue);
+                margin-bottom: 4px;
+              "
+            >
+              💡 Belum punya file CSV?
+            </p>
+            <p
+              style="
+                font-size: 12px;
+                color: #0d3b7a;
+                margin-bottom: 10px;
+                line-height: 1.6;
+              "
+            >
+              Download template, isi datanya di Excel/Sheets, lalu upload
+              kembali di sini.
+            </p>
+            <button
+              class="btn btn-blue btn-sm"
+              style="width: 100%; justify-content: center"
+              onclick="downloadTemplate()"
+            >
+              ⬇ Download Template CSV
+            </button>
+          </div>
+
+          <!-- FORMAT GUIDE -->
+          <div style="margin-bottom: 14px">
+            <p
+              style="
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text2);
+                margin-bottom: 8px;
+              "
+            >
+              Format kolom yang didukung:
+            </p>
+            <div
+              style="
+                overflow-x: auto;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+              "
+            >
+              <table
+                style="
+                  width: 100%;
+                  border-collapse: collapse;
+                  font-size: 11px;
+                  min-width: 400px;
+                "
+              >
+                <thead>
+                  <tr style="background: var(--surface2)">
+                    <th
+                      style="
+                        padding: 7px 10px;
+                        text-align: left;
+                        color: var(--text2);
+                        font-weight: 600;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      Kolom
+                    </th>
+                    <th
+                      style="
+                        padding: 7px 10px;
+                        text-align: left;
+                        color: var(--text2);
+                        font-weight: 600;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      Keterangan
+                    </th>
+                    <th
+                      style="
+                        padding: 7px 10px;
+                        text-align: center;
+                        color: var(--text2);
+                        font-weight: 600;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      Wajib
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: #1565c0;
+                      "
+                    >
+                      nama
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Nama aset
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      ✅
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: #1565c0;
+                      "
+                    >
+                      kode
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Kode unik aset
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      ✅
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      kategori
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Mesin Produksi, IT, dll
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      lokasi
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Nama lokasi aset
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      kondisi
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Baik / Kurang Baik / Rusak
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      status
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Aktif / Dipinjam / Maintenance
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      pj
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Nama penanggung jawab
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      nilai
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Nilai perolehan (angka)
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      tgl
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        border-bottom: 1px solid var(--border);
+                        color: var(--text2);
+                      "
+                    >
+                      Tgl perolehan (YYYY-MM-DD)
+                    </td>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        text-align: center;
+                        border-bottom: 1px solid var(--border);
+                      "
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="
+                        padding: 6px 10px;
+                        font-family: monospace;
+                        color: var(--text3);
+                      "
+                    >
+                      gdrive
+                    </td>
+                    <td style="padding: 6px 10px; color: var(--text2)">
+                      Link foto Google Drive
+                    </td>
+                    <td style="padding: 6px 10px; text-align: center">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- STEP 2: UPLOAD -->
+          <div id="import-upload-area">
+            <label for="csv-file-input" style="display: block">
+              <div
+                style="
+                  border: 2px dashed var(--border);
+                  border-radius: 14px;
+                  padding: 28px 20px;
+                  text-align: center;
+                  cursor: pointer;
+                  transition: border-color 0.15s;
+                "
+                id="drop-zone"
+              >
+                <div style="font-size: 36px; margin-bottom: 8px">📂</div>
+                <p
+                  style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--text);
+                    margin-bottom: 4px;
+                  "
+                >
+                  Ketuk untuk pilih file CSV
+                </p>
+                <p style="font-size: 12px; color: var(--text3)">
+                  Format: .csv — pisah koma
+                </p>
+              </div>
+              <input
+                type="file"
+                id="csv-file-input"
+                accept=".csv,.txt"
+                style="display: none"
+                onchange="handleCSVFile(this)"
+              />
+            </label>
+          </div>
+
+          <!-- STEP 3: PREVIEW (hidden until file loaded) -->
+          <div id="import-preview-area" style="display: none; margin-top: 16px">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
+              "
+            >
+              <p style="font-size: 13px; font-weight: 600; color: var(--text)">
+                Preview Data
+              </p>
+              <div style="display: flex; gap: 6px; align-items: center">
+                <span
+                  id="preview-valid-count"
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--green);
+                    background: var(--green-bg);
+                    padding: 3px 8px;
+                    border-radius: 20px;
+                  "
+                ></span>
+                <span
+                  id="preview-error-count"
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--red);
+                    background: var(--red-bg);
+                    padding: 3px 8px;
+                    border-radius: 20px;
+                    display: none;
+                  "
+                ></span>
+              </div>
+            </div>
+
+            <!-- Summary cards -->
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 8px;
+                margin-bottom: 12px;
+              "
+            >
+              <div
+                style="
+                  background: var(--surface2);
+                  border-radius: 10px;
+                  padding: 10px;
+                  text-align: center;
+                "
+              >
+                <div
+                  style="font-size: 20px; font-weight: 700; color: var(--blue)"
+                  id="prev-total"
+                >
+                  0
+                </div>
+                <div style="font-size: 10px; color: var(--text3)">
+                  Total baris
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--green-bg);
+                  border-radius: 10px;
+                  padding: 10px;
+                  text-align: center;
+                "
+              >
+                <div
+                  style="font-size: 20px; font-weight: 700; color: var(--green)"
+                  id="prev-valid"
+                >
+                  0
+                </div>
+                <div style="font-size: 10px; color: var(--green)">
+                  Siap import
+                </div>
+              </div>
+              <div
+                style="
+                  background: var(--red-bg);
+                  border-radius: 10px;
+                  padding: 10px;
+                  text-align: center;
+                "
+              >
+                <div
+                  style="font-size: 20px; font-weight: 700; color: var(--red)"
+                  id="prev-error"
+                >
+                  0
+                </div>
+                <div style="font-size: 10px; color: var(--red)">Error</div>
+              </div>
+            </div>
+
+            <!-- Preview list -->
+            <div
+              id="preview-list"
+              style="
+                max-height: 280px;
+                overflow-y: auto;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                margin-bottom: 14px;
+              "
+            ></div>
+
+            <div style="display: flex; gap: 8px">
+              <button
+                class="btn btn-secondary btn-sm"
+                style="flex: 1; justify-content: center"
+                onclick="resetImport()"
+              >
+                ↩ Ganti File
+              </button>
+              <button
+                class="btn btn-green"
+                style="flex: 2; justify-content: center; padding: 11px"
+                id="confirm-import-btn"
+                onclick="confirmImport()"
+              >
+                ✅ Import Semua Data
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2924,6 +3590,371 @@
         clearTimeout(t._t);
         t._t = setTimeout(() => t.classList.remove("show"), 2800);
       }
+
+      // ══════════════════════════════════════
+      // CSV IMPORT
+      // ══════════════════════════════════════
+      let parsedCSVRows = [];
+
+      function downloadTemplate() {
+        const header =
+          "nama,kode,kategori,lokasi,kondisi,status,pj,nilai,tgl,gdrive,keterangan";
+        const rows = [
+          "Printer Epson L3210,RPM-PRN-2024-001,Mesin Produksi,Store DMB,Baik,Aktif,Anton,5000000,2024-01-15,https://drive.google.com/file/d/XXXX/view,Printer utama produksi",
+          "Laptop Lenovo ThinkPad,RPM-IT-2024-001,Inventaris IT,Head Office,Baik,Aktif,Budi,12000000,2024-02-01,,",
+          "Meja Kerja,RPM-FRN-2024-001,Furnitur,Head Office,Baik,Aktif,,,2023-12-01,,",
+        ];
+        const csv = header + "\n" + rows.join("\n");
+        saveAs(
+          new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+          "template_import_aset.csv",
+        );
+        toast("✅ Template didownload!");
+      }
+
+      function handleCSVFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            parseAndPreviewCSV(e.target.result);
+          } catch (err) {
+            toast("⚠ Gagal membaca file: " + err.message);
+          }
+        };
+        reader.readAsText(file, "UTF-8");
+      }
+
+      function parseAndPreviewCSV(raw) {
+        // Normalize line endings
+        const lines = raw
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n")
+          .split("\n")
+          .filter((l) => l.trim());
+        if (lines.length < 2) {
+          toast("⚠ File CSV kosong atau hanya header!");
+          return;
+        }
+
+        // Parse header — flexible column name detection
+        const headerRaw = parseCSVLine(lines[0]);
+        const hMap = {};
+        headerRaw.forEach((h, i) => {
+          const k = h
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]/g, "");
+          // Map various header names to our field names
+          const aliases = {
+            nama: [
+              "nama",
+              "name",
+              "namabarang",
+              "namaasset",
+              "namaaset",
+              "itemname",
+            ],
+            kode: [
+              "kode",
+              "code",
+              "kodeaset",
+              "kodeasset",
+              "sku",
+              "id",
+              "nomor",
+              "no",
+            ],
+            kategori: ["kategori", "category", "kat", "jenis", "tipe", "type"],
+            lokasi: ["lokasi", "location", "loc", "tempat", "ruangan", "room"],
+            kondisi: ["kondisi", "condition", "keadaan", "state"],
+            status: ["status", "state"],
+            pj: [
+              "pj",
+              "pic",
+              "penanggungjawab",
+              "penanggung",
+              "responsible",
+              "owner",
+            ],
+            nilai: ["nilai", "value", "harga", "price", "cost", "biaya"],
+            tgl: [
+              "tgl",
+              "tanggal",
+              "date",
+              "tglperolehan",
+              "tanggalperolehan",
+              "tglbeli",
+            ],
+            gdrive: [
+              "gdrive",
+              "foto",
+              "photo",
+              "image",
+              "gambar",
+              "url",
+              "link",
+              "drive",
+            ],
+            keterangan: [
+              "keterangan",
+              "note",
+              "notes",
+              "catatan",
+              "description",
+              "desc",
+              "ket",
+            ],
+          };
+          for (const [field, alts] of Object.entries(aliases)) {
+            if (alts.includes(k) && hMap[field] === undefined) hMap[field] = i;
+          }
+        });
+
+        // Validate minimal columns
+        if (hMap.nama === undefined && hMap.kode === undefined) {
+          toast('⚠ Kolom "nama" atau "kode" tidak ditemukan di header!');
+          return;
+        }
+
+        // Parse rows
+        parsedCSVRows = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const cols = parseCSVLine(lines[i]);
+          const g = (f) =>
+            hMap[f] !== undefined ? (cols[hMap[f]] || "").trim() : "";
+          const nama = g("nama");
+          const kode = g("kode");
+          const errors = [];
+          if (!nama) errors.push("Nama kosong");
+          if (!kode) errors.push("Kode kosong");
+          // Check duplicate kode in existing data
+          const dupExist = Object.values(ASSETS).find(
+            (a) => a.kode?.toLowerCase() === kode.toLowerCase(),
+          );
+          if (dupExist && kode)
+            errors.push("Kode sudah ada di database (akan ditimpa)");
+          // Check duplicate within CSV
+          const dupCSV = parsedCSVRows.find(
+            (r) =>
+              r.kode?.toLowerCase() === kode.toLowerCase() &&
+              !r.errors.includes("Kode sudah ada di database (akan ditimpa)"),
+          );
+          if (dupCSV && kode) errors.push("Kode duplikat dalam file CSV");
+
+          parsedCSVRows.push({
+            row: i,
+            nama,
+            kode,
+            kategori: g("kategori") || "Lainnya",
+            lokasi: g("lokasi"),
+            kondisi: g("kondisi") || "Baik",
+            status: g("status") || "Aktif",
+            pj: g("pj"),
+            nilai: parseFloat(g("nilai").replace(/[^0-9.]/g, "")) || 0,
+            tgl: g("tgl"),
+            gdrive: g("gdrive"),
+            keterangan: g("keterangan"),
+            errors,
+            isValid:
+              errors.filter(
+                (e) => e !== "Kode sudah ada di database (akan ditimpa)",
+              ).length === 0,
+          });
+        }
+
+        renderImportPreview();
+      }
+
+      function parseCSVLine(line) {
+        // Handles quoted fields with commas inside
+        const result = [];
+        let cur = "";
+        let inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === '"') {
+            if (inQuote && line[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else inQuote = !inQuote;
+          } else if (c === "," && !inQuote) {
+            result.push(cur);
+            cur = "";
+          } else {
+            cur += c;
+          }
+        }
+        result.push(cur);
+        return result;
+      }
+
+      function renderImportPreview() {
+        document.getElementById("import-upload-area").style.display = "none";
+        document.getElementById("import-preview-area").style.display = "block";
+
+        const valid = parsedCSVRows.filter((r) => r.isValid);
+        const errors = parsedCSVRows.filter((r) => !r.isValid);
+        const overwrite = parsedCSVRows.filter((r) =>
+          r.errors.includes("Kode sudah ada di database (akan ditimpa)"),
+        );
+
+        document.getElementById("prev-total").textContent =
+          parsedCSVRows.length;
+        document.getElementById("prev-valid").textContent = valid.length;
+        document.getElementById("prev-error").textContent = errors.length;
+
+        document.getElementById("confirm-import-btn").textContent =
+          `✅ Import ${valid.length} Aset${overwrite.length ? " (" + overwrite.length + " ditimpa)" : ""}`;
+        document.getElementById("confirm-import-btn").disabled =
+          valid.length === 0;
+
+        const list = document.getElementById("preview-list");
+        list.innerHTML = parsedCSVRows
+          .map((r) => {
+            const isErr = !r.isValid;
+            const isWarn = r.isValid && r.errors.length > 0;
+            const bg = isErr ? "#fff8f8" : isWarn ? "#fffbf0" : "#fff";
+            const icon = isErr ? "❌" : isWarn ? "⚠️" : "✅";
+            return `<div class="prev-item" style="background:${bg}">
+      <div class="prev-item-header">
+        <span class="prev-item-name">${icon} ${esc(r.nama || "(kosong)")}</span>
+        <span class="prev-item-kode">${esc(r.kode || "—")}</span>
+      </div>
+      <div class="prev-item-meta">${esc(r.kategori)} · ${esc(r.lokasi || "—")} · <span class="badge ${kCls(r.kondisi)}" style="font-size:10px;padding:1px 6px">${esc(r.kondisi)}</span></div>
+      ${r.errors.length ? `<div class="prev-item-err">⚠ ${r.errors.join(" · ")}</div>` : ""}
+    </div>`;
+          })
+          .join("");
+      }
+
+      function confirmImport() {
+        const toImport = parsedCSVRows.filter((r) => r.isValid);
+        if (!toImport.length) {
+          toast("⚠ Tidak ada data valid untuk diimport!");
+          return;
+        }
+
+        let done = 0;
+        toImport.forEach((r) => {
+          const asset = {
+            nama: r.nama,
+            kode: r.kode,
+            kategori: r.kategori,
+            lokasi: r.lokasi,
+            kondisi: r.kondisi,
+            status: r.status,
+            pj: r.pj,
+            nilai: r.nilai,
+            tgl: r.tgl,
+            gdrive: r.gdrive,
+            keterangan: r.keterangan,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+          };
+
+          if (!isDemo && DB) {
+            // Check if kode already exists → update, else create
+            const existing = Object.entries(ASSETS).find(
+              ([, a]) => a.kode?.toLowerCase() === r.kode.toLowerCase(),
+            );
+            if (existing) {
+              DB.ref("assets/" + existing[0]).update({
+                ...asset,
+                created_at: existing[1].created_at,
+              });
+              addEvent({
+                asset_id: existing[0],
+                asset_kode: r.kode,
+                asset_nama: r.nama,
+                type: "REGISTRASI",
+                kondisi: r.kondisi,
+                lokasi: r.lokasi,
+                catatan: "Diimport dari CSV (update)",
+              });
+            } else {
+              const ref = DB.ref("assets").push();
+              ref.set(asset);
+              addEvent({
+                asset_id: ref.key,
+                asset_kode: r.kode,
+                asset_nama: r.nama,
+                type: "REGISTRASI",
+                kondisi: r.kondisi,
+                lokasi: r.lokasi,
+                catatan: "Diimport dari CSV",
+              });
+            }
+          } else {
+            const existing = Object.entries(ASSETS).find(
+              ([, a]) => a.kode?.toLowerCase() === r.kode.toLowerCase(),
+            );
+            const pid = existing ? existing[0] : "L" + Date.now() + "_" + done;
+            ASSETS[pid] = {
+              ...asset,
+              created_at: existing ? existing[1].created_at : Date.now(),
+            };
+            addEventLocal({
+              asset_id: pid,
+              asset_kode: r.kode,
+              asset_nama: r.nama,
+              type: "REGISTRASI",
+              kondisi: r.kondisi,
+              lokasi: r.lokasi,
+              catatan: "Diimport dari CSV",
+            });
+          }
+          done++;
+        });
+
+        if (isDemo) {
+          saveDemo();
+          refreshAll();
+        }
+        closeSheet("sheet-import");
+        resetImport();
+        toast(`✅ ${done} aset berhasil diimport!`);
+        switchPage("aset");
+      }
+
+      function resetImport() {
+        parsedCSVRows = [];
+        document.getElementById("import-upload-area").style.display = "block";
+        document.getElementById("import-preview-area").style.display = "none";
+        document.getElementById("csv-file-input").value = "";
+        document.getElementById("preview-list").innerHTML = "";
+      }
+
+      // Drag & drop support on desktop
+      document.addEventListener("DOMContentLoaded", () => {
+        const dz = document.getElementById("drop-zone");
+        if (dz) {
+          dz.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dz.classList.add("drop-zone-active");
+          });
+          dz.addEventListener("dragleave", () =>
+            dz.classList.remove("drop-zone-active"),
+          );
+          dz.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dz.classList.remove("drop-zone-active");
+            const file = e.dataTransfer.files[0];
+            if (
+              file &&
+              (file.name.endsWith(".csv") || file.type === "text/csv")
+            ) {
+              const reader = new FileReader();
+              reader.onload = (ev) => parseAndPreviewCSV(ev.target.result);
+              reader.readAsText(file, "UTF-8");
+            } else {
+              toast("⚠ Pilih file .csv");
+            }
+          });
+        }
+      });
 
       // ══════════════════════════════════════
       // INIT
