@@ -649,7 +649,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- USERS -->
-<div class="sheet-bg admin-only" id="sh-users" onclick="bgClose('sh-users',event)" style="display:none">
+<div class="sheet-bg admin-only" id="sh-users" onclick="bgClose('sh-users',event)">
   <div class="sheet">
     <div class="shdl"></div>
     <div class="shhdr"><h3>👥 Kelola Pengguna</h3><button class="btn bs bsm" onclick="closeSheet('sh-users')">✕</button></div>
@@ -887,9 +887,9 @@ function showMainApp() {
 function applyRole() {
   const isAdmin = USER.role === 'admin';
   document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = isAdmin
-      ? (el.classList.contains('sheet-bg') ? 'flex' : (el.tagName === 'BUTTON' && el.classList.contains('bs') ? 'flex' : 'flex'))
-      : 'none';
+    // Sheet-bg dilewati — visibilitasnya dikontrol oleh class .show, bukan inline style
+    if (el.classList.contains('sheet-bg')) return;
+    el.style.display = isAdmin ? 'flex' : 'none';
   });
 }
 
