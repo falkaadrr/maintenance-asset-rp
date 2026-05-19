@@ -1436,80 +1436,156 @@ function renderQR() {
 function dlQR(id) {
   const a = ASSETS[id]; if (!a) return;
   const size = parseInt(document.getElementById('qr-size')?.value || '1000');
-  // Generate QR full size di hidden div
+  const dpr  = 2; // 2x untuk ketajaman retina/cetak
+
+  toast('⏳ Generating QR ' + size + 'px...');
+
+  // Generate QR di hidden div dengan ukuran penuh
   const h = document.createElement('div');
-  h.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+  h.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:' + size + 'px;height:' + size + 'px';
   document.body.appendChild(h);
-  new QRCode(h, { text: a.kode, width: size, height: size, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+
+  new QRCode(h, {
+    text: a.kode,
+    width: size,
+    height: size,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
   setTimeout(() => {
-    const cv = h.querySelector('canvas');
-    if (cv) {
-      // Tambah margin + label
-      const pad = 40, lblH = 80;
-      const c2 = document.createElement('canvas');
-      c2.width = size + pad * 2;
-      c2.height = size + pad * 2 + lblH;
-      const ctx = c2.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, c2.width, c2.height);
-      ctx.drawImage(cv, pad, pad);
-      // Nama aset
-      ctx.font = `bold ${Math.round(size * 0.03)}px Arial`;
-      ctx.fillStyle = '#1a1a1a';
-      ctx.textAlign = 'center';
-      ctx.fillText((a.nama || '').slice(0, 40), c2.width / 2, size + pad * 2 + 32);
-      // Kode aset
-      ctx.font = `${Math.round(size * 0.022)}px monospace`;
-      ctx.fillStyle = '#666';
-      ctx.fillText(a.kode || '', c2.width / 2, size + pad * 2 + 64);
-      const link = document.createElement('a');
-      link.download = `QR_${(a.kode || id).replace(/[^\w-]/g, '_')}.png`;
-      link.href = c2.toDataURL('image/png');
-      link.click();
+    const qrCanvas = h.querySelector('canvas');
+    if (!qrCanvas) { document.body.removeChild(h); toast('❌ Gagal generate QR', 'err'); return; }
+
+    // Layout: QR + padding + 2 baris teks
+    const pad    = Math.round(size * 0.05);  // 5% padding
+    const fs1    = Math.max(24, Math.round(size * 0.038)); // font nama
+    const fs2    = Math.max(18, Math.round(size * 0.028)); // font kode
+    const lblH   = pad + fs1 + 12 + fs2 + pad;
+    const totalW = size + pad * 2;
+    const totalH = size + pad * 2 + lblH;
+
+    // Canvas fisik 2x untuk ketajaman
+    const c2  = document.createElement('canvas');
+    c2.width  = totalW * dpr;
+    c2.height = totalH * dpr;
+    const ctx = c2.getContext('2d');
+
+    // Scale semua drawing 2x
+    ctx.scale(dpr, dpr);
+
+    // Background putih bersih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, totalW, totalH);
+
+    // Gambar QR — nonaktifkan smoothing agar pixel tajam
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(qrCanvas, pad, pad, size, size);
+
+    // Border tipis di sekeliling QR
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad - 0.5, pad - 0.5, size + 1, size + 1);
+
+    // ── Nama aset ──
+    const nameY = size + pad * 2 + fs1;
+    ctx.font = `bold ${fs1}px -apple-system, Arial, sans-serif`;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    // Potong jika terlalu panjang
+    const maxW = totalW - pad * 2;
+    let nameTxt = a.nama || '';
+    while (nameTxt.length > 3 && ctx.measureText(nameTxt).width > maxW) {
+      nameTxt = nameTxt.slice(0, -1);
     }
+    if (nameTxt !== a.nama) nameTxt += '...';
+    ctx.fillText(nameTxt, totalW / 2, nameY);
+
+    // ── Kode aset (monospace) ──
+    const kodeY = nameY + 12 + fs2;
+    ctx.font = `${fs2}px 'Courier New', Courier, monospace`;
+    ctx.fillStyle = '#555555';
+    ctx.fillText(a.kode || '', totalW / 2, kodeY);
+
+    // Download sebagai PNG berkualitas tinggi
+    const link = document.createElement('a');
+    link.download = `QR_${(a.kode || id).replace(/[^\w-]/g, '_')}_${size}px.png`;
+    link.href = c2.toDataURL('image/png', 1.0);
+    link.click();
+
     document.body.removeChild(h);
-  }, 150);
+    toast('✅ QR ' + size + 'px didownload!');
+  }, 200);
 }
 
 async function downloadAllQR() {
   const arr = Object.entries(ASSETS);
   if (!arr.length) { toast('Belum ada aset!', 'warn'); return; }
-  const size = parseInt(document.getElementById('qr-size')?.value || '1000');
-  toast('⏳ Generating ZIP (' + arr.length + ' QR @ ' + size + 'px)...');
+  const size  = parseInt(document.getElementById('qr-size')?.value || '1000');
+  const dpr   = 2;
+  const pad   = Math.round(size * 0.05);
+  const fs1   = Math.max(24, Math.round(size * 0.038));
+  const fs2   = Math.max(18, Math.round(size * 0.028));
+  const lblH  = pad + fs1 + 12 + fs2 + pad;
+  const totalW = size + pad * 2;
+  const totalH = size + pad * 2 + lblH;
+
+  toast(`⏳ Generating ${arr.length} QR @ ${size}px...`);
   const zip = new JSZip();
-  const pad = 40, lblH = 80;
+
   for (const [id, a] of arr) {
     const h = document.createElement('div');
     h.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
     document.body.appendChild(h);
-    new QRCode(h, { text: a.kode, width: size, height: size, colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
-    await new Promise(r => setTimeout(r, 100));
-    const cv = h.querySelector('canvas');
-    if (cv) {
-      const c2 = document.createElement('canvas');
-      c2.width = size + pad * 2;
-      c2.height = size + pad * 2 + lblH;
+    new QRCode(h, { text: a.kode, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    await new Promise(r => setTimeout(r, 120));
+
+    const qrCanvas = h.querySelector('canvas');
+    if (qrCanvas) {
+      const c2  = document.createElement('canvas');
+      c2.width  = totalW * dpr;
+      c2.height = totalH * dpr;
       const ctx = c2.getContext('2d');
+      ctx.scale(dpr, dpr);
+
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, c2.width, c2.height);
-      ctx.drawImage(cv, pad, pad);
-      ctx.font = `bold ${Math.round(size * 0.03)}px Arial`;
+      ctx.fillRect(0, 0, totalW, totalH);
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(qrCanvas, pad, pad, size, size);
+
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pad - 0.5, pad - 0.5, size + 1, size + 1);
+
+      const nameY = size + pad * 2 + fs1;
+      ctx.font = `bold ${fs1}px Arial, sans-serif`;
       ctx.fillStyle = '#1a1a1a';
       ctx.textAlign = 'center';
-      ctx.fillText((a.nama || '').slice(0, 40), c2.width / 2, size + pad * 2 + 32);
-      ctx.font = `${Math.round(size * 0.022)}px monospace`;
-      ctx.fillStyle = '#666';
-      ctx.fillText(a.kode || '', c2.width / 2, size + pad * 2 + 64);
+      ctx.textBaseline = 'alphabetic';
+      const maxW = totalW - pad * 2;
+      let nameTxt = a.nama || '';
+      while (nameTxt.length > 3 && ctx.measureText(nameTxt).width > maxW) nameTxt = nameTxt.slice(0, -1);
+      if (nameTxt !== a.nama) nameTxt += '...';
+      ctx.fillText(nameTxt, totalW / 2, nameY);
+
+      ctx.font = `${fs2}px 'Courier New', monospace`;
+      ctx.fillStyle = '#555555';
+      ctx.fillText(a.kode || '', totalW / 2, nameY + 12 + fs2);
+
       zip.file(
-        'QR_' + (a.kode || id).replace(/[^\w-]/g, '_') + '.png',
-        c2.toDataURL().split(',')[1],
+        `QR_${(a.kode || id).replace(/[^\w-]/g, '_')}.png`,
+        c2.toDataURL('image/png', 1.0).split(',')[1],
         { base64: true }
       );
     }
     document.body.removeChild(h);
   }
+
   saveAs(await zip.generateAsync({ type: 'blob' }), `QR_Aset_RPM_${size}px.zip`);
-  toast('✅ ZIP ' + arr.length + ' QR berhasil didownload!');
+  toast(`✅ ZIP ${arr.length} QR berhasil didownload!`);
 }
 
 // ══════════════════════════════════════════════════════
