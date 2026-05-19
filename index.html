@@ -718,6 +718,11 @@ let parsedCSV  = [];
 // FIREBASE INIT — listeners dipasang SEBELUM login
 // ══════════════════════════════════════════════════════
 function initFirebase(cfg) {
+  // Cek apakah ada override config (dari sheet setup)
+  const override = localStorage.getItem('rpm_cfg_override');
+  if (override) {
+    try { cfg = JSON.parse(override); } catch {}
+  }
   try {
     if (!firebase.apps.length) firebase.initializeApp(cfg);
     else firebase.app();
@@ -726,14 +731,16 @@ function initFirebase(cfg) {
 
     // Conn state
     DB.ref('.info/connected').on('value', s => {
-      setConn(s.val() ? 'live' : 'off', s.val() ? 'Live' : 'Offline');
+      setConn(s.val() ? 'live' : 'off', s.val() ? 'Live ✓' : 'Reconnecting...');
     });
 
-    // ★ PASANG LISTENERS SEGERA — sebelum login cek
-    // Sehingga semua device SELALU mendapat update real-time
+    // ★ LISTENERS DIPASANG SEGERA — sebelum login
     DB.ref('assets').on('value', snap => {
       ASSETS = snap.val() || {};
       refreshAll();
+    }, err => {
+      console.error('Assets read error:', err.message);
+      toast('⚠ Gagal baca data: ' + err.message, 'err');
     });
 
     DB.ref('events').orderByChild('timestamp').limitToLast(300).on('value', snap => {
@@ -749,12 +756,14 @@ function initFirebase(cfg) {
     // Cek sesi tersimpan
     const sess = localStorage.getItem('rpm_sess');
     if (sess) {
-      const s = JSON.parse(sess);
-      DB.ref('akun/' + s.uid).once('value', snap => {
-        const u = snap.val();
-        if (u && u.aktif !== false) loginSuccess(s.uid, u.nama, u.role);
-        else showLoginCard();
-      }).catch(() => showLoginCard());
+      try {
+        const s = JSON.parse(sess);
+        DB.ref('akun/' + s.uid).once('value', snap => {
+          const u = snap.val();
+          if (u && u.aktif !== false) loginSuccess(s.uid, u.nama, u.role);
+          else showLoginCard();
+        }).catch(() => showLoginCard());
+      } catch { showLoginCard(); }
     } else {
       DB.ref('akun').once('value', snap => {
         if (!snap.val()) showSetupAdmin();
@@ -762,7 +771,8 @@ function initFirebase(cfg) {
       }).catch(() => showLoginCard());
     }
   } catch(e) {
-    toast('❌ Firebase error: ' + e.message, 'err');
+    console.error('Firebase init error:', e);
+    toast('❌ Gagal konek Firebase: ' + e.message + ' — masuk mode Demo', 'err');
     useDemoMode();
   }
 }
@@ -780,13 +790,13 @@ function useDemoMode() {
   DB = null;
   ASSETS = JSON.parse(localStorage.getItem('rpm_assets') || '{}');
   EVENTS = JSON.parse(localStorage.getItem('rpm_events') || '[]');
-  setConn('demo', 'Demo');
-  USER = { uid: 'demo', nama: localStorage.getItem('rpm_user') || 'Admin', role: 'admin' };
+  setConn('demo', 'Offline');
+  USER = { uid: 'demo', nama: 'Admin (Demo)', role: 'admin' };
   document.getElementById('demo-banner').classList.remove('hidden');
   closeSheet('sh-setup');
   showMainApp();
   refreshAll();
-  toast('Mode Demo aktif — data tersimpan lokal');
+  toast('⚠ Mode Offline — data tidak sync antar device', 'warn');
 }
 
 function saveDemo() {
@@ -891,8 +901,14 @@ function doLogout() {
   document.getElementById('ln-pin').value = '';
   document.getElementById('ln-err').textContent = '';
   document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('card-loading').style.display = 'none';
-  showLoginCard();
+  // Tampilkan login card langsung (Firebase sudah konek)
+  if (!isDemo && DB) {
+    document.getElementById('card-loading').style.display = 'none';
+    showLoginCard();
+  } else {
+    document.getElementById('card-loading').style.display = 'none';
+    showLoginCard();
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -1610,13 +1626,12 @@ function applyFirebase() {
   if (!raw) { toast('⚠ Paste Firebase config dulu!', 'warn'); return; }
   let cfg;
   try { cfg = JSON.parse(raw); } catch { toast('⚠ Format JSON tidak valid!', 'err'); return; }
-  if (!cfg.databaseURL) { toast('⚠ databaseURL tidak ada di config!', 'err'); return; }
-  if (user) { localStorage.setItem('rpm_user', user); }
-  localStorage.setItem('rpm_cfg', raw);
-  closeSheet('sh-setup');
-  // Reset session agar login ulang dengan Firebase baru
-  localStorage.removeItem('rpm_sess');
-  location.reload();
+  if (!cfg.databaseURL) { toast('⚠ databaseURL tidak ada!', 'err'); return; }
+  if (user) localStorage.setItem('rpm_user', user);
+  // Simpan config baru dan reload
+  localStorage.setItem('rpm_cfg_override', raw);
+  toast('✅ Config disimpan — reload untuk konek ke Firebase baru');
+  setTimeout(() => location.reload(), 1500);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1677,6 +1692,19 @@ function toast(msg, type = 'ok') {
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
+
+// ★ CONFIG FIREBASE — sudah tertanam, langsung konek otomatis
+// Ganti nilai ini jika project Firebase berubah
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCH1tRQPj32fLcULeMYfZynj4VeI8KHjsg",
+  authDomain:        "rpm-asset.firebaseapp.com",
+  databaseURL:       "https://rpm-asset-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "rpm-asset",
+  storageBucket:     "rpm-asset.firebasestorage.app",
+  messagingSenderId: "374416714624",
+  appId:             "1:374416714624:web:882e1df3fb1cbdc258ef65"
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   // Desktop layout
   const applyLayout = () => {
@@ -1687,12 +1715,6 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   applyLayout();
   window.addEventListener('resize', applyLayout);
-
-  // Setup sheet prefill
-  const savedCfg = localStorage.getItem('rpm_cfg');
-  if (savedCfg) document.getElementById('su-cfg').value = savedCfg;
-  const savedUser = localStorage.getItem('rpm_user');
-  if (savedUser) document.getElementById('su-user').value = savedUser;
 
   // CSV drag drop
   const dz = document.getElementById('drop-zone');
@@ -1707,16 +1729,9 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Start app
-  const savedFB = localStorage.getItem('rpm_cfg');
-  if (savedFB) {
-    try {
-      document.getElementById('card-loading').style.display = 'block';
-      initFirebase(JSON.parse(savedFB));
-    } catch { useDemoMode(); }
-  } else {
-    useDemoMode();
-  }
+  // ★ Langsung konek Firebase — tanpa perlu setup manual
+  document.getElementById('card-loading').style.display = 'block';
+  initFirebase(FIREBASE_CONFIG);
 });
 </script>
 </body>
