@@ -13,6 +13,7 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -401,7 +402,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn bs bblock" onclick="openAddSheet()">➕ Tambah Aset</button>
         <button class="btn bs bblock" onclick="switchPage('qr')">🔲 QR Code</button>
         <button class="btn bs bblock" onclick="exportCSV()">📤 Export CSV</button>
-        <button class="btn bs bblock admin-only" onclick="openSheet('sh-import')" style="grid-column:1/-1;display:none">📥 Import CSV</button>
+        <button class="btn bs bblock admin-only" onclick="openSheet('sh-import')" style="grid-column:1/-1;display:none">📥 Import Excel / CSV</button>
         <button class="btn bs bblock admin-only" onclick="openUsersSheet()" style="grid-column:1/-1;display:none">👥 Kelola Pengguna</button>
       </div>
     </div>
@@ -420,7 +421,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="chip" onclick="setStatusFilter(this,'Tidak Aktif')" data-v="Tidak Aktif">Tidak Aktif</div>
     </div>
     <div style="display:flex;gap:8px;padding:10px 16px 2px">
-      <button class="btn bs bsm admin-only" style="flex:1;display:none" onclick="openSheet('sh-import')">📥 Import CSV</button>
+      <button class="btn bs bsm admin-only" style="flex:1;display:none" onclick="openSheet('sh-import')">📥 Import Excel / CSV</button>
       <button class="btn bs bsm" style="flex:1" onclick="exportCSV()">📤 Export CSV</button>
     </div>
     <div style="height:6px"></div>
@@ -618,28 +619,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="sheet-bg" id="sh-import" onclick="bgClose('sh-import',event)">
   <div class="sheet">
     <div class="shdl"></div>
-    <div class="shhdr"><h3>📥 Import Data dari CSV</h3><button class="btn bs bsm" onclick="closeSheet('sh-import')">✕</button></div>
+    <div class="shhdr"><h3>📥 Import Aset</h3><button class="btn bs bsm" onclick="closeSheet('sh-import')">✕</button></div>
     <div class="shbody">
       <div style="background:var(--blue-bg);border-radius:12px;padding:12px 14px;margin-bottom:14px">
-        <p style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:6px">💡 Belum punya template?</p>
+        <p style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:2px">📋 Format yang didukung</p>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:8px;line-height:1.6">Upload file <strong>Excel (.xlsx)</strong> atau <strong>CSV</strong> — langsung terbaca otomatis. Excel format laporan Ruangprint (MASTER ASET + MASTER PERLENGKAPAN) langsung dikenali.</p>
         <button class="btn bp bsm" style="width:100%;justify-content:center" onclick="downloadTemplate()">⬇ Download Template CSV</button>
       </div>
       <div id="import-upload">
-        <label for="csv-input">
+        <label for="file-import-input">
           <div class="import-drop" id="drop-zone">
             <div style="font-size:36px;margin-bottom:8px">📂</div>
-            <p style="font-size:14px;font-weight:600;margin-bottom:4px">Pilih file CSV</p>
-            <p style="font-size:12px;color:var(--t2)">atau drag & drop di sini</p>
+            <p style="font-size:14px;font-weight:600;margin-bottom:4px">Pilih file Excel atau CSV</p>
+            <p style="font-size:12px;color:var(--t2)">.xlsx · .xls · .csv — drag & drop di sini</p>
           </div>
-          <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="onCSVSelect(this)"/>
+          <input type="file" id="file-import-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="onFileImportSelect(this)"/>
         </label>
+        <div id="import-loading" style="display:none;text-align:center;padding:24px">
+          <div style="font-size:28px;margin-bottom:8px">⏳</div>
+          <div style="font-size:13px;color:var(--t2)" id="import-loading-msg">Membaca file...</div>
+        </div>
       </div>
       <div id="import-preview" style="display:none">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-          <div style="background:var(--sf2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--blue)" id="pv-total">0</div><div style="font-size:10px;color:var(--t3)">Total baris</div></div>
+          <div style="background:var(--sf2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--blue)" id="pv-total">0</div><div style="font-size:10px;color:var(--t3)">Total</div></div>
           <div style="background:var(--green-bg);border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--green)" id="pv-valid">0</div><div style="font-size:10px;color:var(--green)">Valid</div></div>
           <div style="background:var(--red-bg);border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--red)" id="pv-err">0</div><div style="font-size:10px;color:var(--red)">Error</div></div>
         </div>
+        <div id="pv-source" style="font-size:12px;color:var(--t3);margin-bottom:8px;text-align:center"></div>
         <div id="pv-list" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;margin-bottom:12px"></div>
         <div style="display:flex;gap:8px">
           <button class="btn bs bsm" style="flex:1;justify-content:center" onclick="resetImport()">↩ Ganti File</button>
@@ -1569,58 +1576,264 @@ function toggleAktif(uid, isAktif) {
 // ══════════════════════════════════════════════════════
 // IMPORT CSV
 // ══════════════════════════════════════════════════════
-function downloadTemplate() {
-  const csv = 'nama,kode,kategori,lokasi,kondisi,status,pj,nilai,tgl,gdrive,keterangan\nPrinter Epson L3210,RPM-PRN-2024-001,Mesin Produksi,Store DMB,Baik,Aktif,Anton,5000000,2024-01-15,,\nLaptop Lenovo,RPM-IT-2024-001,Inventaris IT,Head Office,Baik,Aktif,Budi,12000000,2024-02-01,,\n';
-  saveAs(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'template_import_aset.csv');
-  toast('✅ Template didownload!');
+// ══════════════════════════════════════════════════════
+// IMPORT — Excel (.xlsx) & CSV
+// ══════════════════════════════════════════════════════
+
+const KAT_MAP = {
+  MSN:'Mesin Produksi', ELK:'Elektronik', FRN:'Furnitur',
+  KDR:'Kendaraan', PRL:'Peralatan Kantor', SKM:'Inventaris IT',
+  AC:'Elektronik', CPU:'Elektronik', LPT:'Elektronik',
+  MON:'Elektronik', PRT:'Elektronik', TV:'Elektronik', HP:'Elektronik',
+  ABS:'Elektronik', PBX:'Elektronik', CCT:'Elektronik',
+  CHR:'Furnitur', RAK:'Furnitur', LMR:'Furnitur', MJA:'Furnitur',
+  OTD:'Mesin Produksi', IND:'Mesin Produksi', CUT:'Mesin Produksi',
+  LAM:'Mesin Produksi', UVR:'Mesin Produksi', A3:'Mesin Produksi',
+  PRS:'Mesin Produksi', POT:'Mesin Produksi', JLD:'Mesin Produksi',
+  FNS:'Mesin Produksi', MTR:'Kendaraan', MOB:'Kendaraan',
+  KMP:'Peralatan Kantor', APR:'Peralatan Kantor', TLB:'Peralatan Kantor',
+};
+
+function skuToKategori(sku) {
+  const parts = String(sku || '').split('-');
+  // Format SOP baru: RP-AT-MSN-OTD-... atau RP-PL-FRN-CHR-...
+  // Format lama:     RP-MSN-OTD-...
+  for (const idx of [3, 2, 1]) {
+    if (parts[idx]) {
+      const k = KAT_MAP[parts[idx].toUpperCase()];
+      if (k) return k;
+    }
+  }
+  return 'Lainnya';
 }
 
-function onCSVSelect(input) {
+function mapStatus(s) {
+  s = String(s || '').trim().toUpperCase();
+  if (s.includes('MUTASI') || s.includes('DIALIHKAN')) return 'Dipinjam';
+  if (s === 'RUSAK') return 'Maintenance';
+  if (s === 'AKTIF') return 'Aktif';
+  return 'Tidak Aktif';
+}
+
+function mapKondisi(k) {
+  k = String(k || '').trim().toLowerCase();
+  if (k.includes('rusak')) return 'Rusak';
+  if (k.includes('kurang')) return 'Kurang Baik';
+  return 'Baik';
+}
+
+function normalizeRow(r, tipe) {
+  // r = array: [no, sku_lama, sku_baru, nama, merek, model, sn, entitas, cabang, ruangan, tahun, nilai, kondisi_beli, status, kondisi, ...]
+  const sku  = String(r[2] || '').trim();
+  const nama = String(r[3] || '').trim();
+  if (!sku || !nama) return null;
+
+  const cabang  = String(r[8] || '').trim();
+  const ruangan = String(r[9] || '').trim();
+  const lokasi  = ruangan ? `${cabang} — ${ruangan}` : cabang;
+
+  let nilai = 0;
+  try { nilai = r[11] ? Math.round(parseFloat(r[11])) : 0; } catch {}
+
+  let tgl = '';
+  try { tgl = r[10] ? `${Math.round(parseFloat(r[10]))}-01-01` : ''; } catch {}
+
+  const bits = [`Tipe: ${tipe}`];
+  if (r[4]) bits.push(`Merek: ${String(r[4]).trim()}`);
+  if (r[5]) bits.push(`Model: ${String(r[5]).trim()}`);
+  if (r[6]) bits.push(`SN: ${String(r[6]).trim()}`);
+  if (r[7]) bits.push(`Entitas: ${String(r[7]).trim()}`);
+  if (r[21]) bits.push(String(r[21]).trim());
+
+  return {
+    nama, kode: sku,
+    kategori:   skuToKategori(sku),
+    lokasi,
+    kondisi:    mapKondisi(r[14]),
+    status:     mapStatus(r[13]),
+    pj:         '',
+    nilai,
+    tgl,
+    gdrive:     '',
+    keterangan: bits.join(' | '),
+  };
+}
+
+// ── Entry point file selection ──
+function onFileImportSelect(input) {
   const f = input.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = e => parseCSV(e.target.result);
-  r.readAsText(f, 'UTF-8');
+  const ext = f.name.split('.').pop().toLowerCase();
+  showImportLoading('Membaca file...');
+  if (ext === 'csv') {
+    const r = new FileReader();
+    r.onload = e => { parseCSV(e.target.result); hideImportLoading(); };
+    r.readAsText(f, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const r = new FileReader();
+    r.onload = e => { parseExcel(e.target.result, f.name); hideImportLoading(); };
+    r.readAsArrayBuffer(f);
+  } else {
+    hideImportLoading();
+    toast('⚠ Format tidak didukung. Pilih .xlsx, .xls, atau .csv', 'warn');
+  }
 }
 
+function showImportLoading(msg) {
+  document.getElementById('import-upload').style.display = 'none';
+  document.getElementById('import-loading').style.display = 'block';
+  document.getElementById('import-loading-msg').textContent = msg;
+}
+
+function hideImportLoading() {
+  document.getElementById('import-loading').style.display = 'none';
+}
+
+// ── EXCEL PARSER — otomatis deteksi sheet Ruangprint ──
+function parseExcel(arrayBuffer, filename) {
+  try {
+    const wb = XLSX.read(arrayBuffer, { type: 'array' });
+    parsedCSV = [];
+    let sources = [];
+
+    // Cek sheet format laporan Ruangprint (MASTER ASET + MASTER PERLENGKAPAN)
+    const hasMasterAset = wb.SheetNames.includes('MASTER ASET');
+    const hasMasterPL   = wb.SheetNames.includes('MASTER PERLENGKAPAN');
+
+    if (hasMasterAset || hasMasterPL) {
+      // Format laporan Ruangprint — baca dari baris 5 (index 4)
+      if (hasMasterAset) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['MASTER ASET'], { header: 1, defval: '' });
+        let added = 0;
+        for (let i = 4; i < rows.length; i++) {
+          const row = normalizeRow(rows[i], 'Aset Tetap');
+          if (!row) continue;
+          const errs = [];
+          if (parsedCSV.find(x => x.kode.toLowerCase() === row.kode.toLowerCase())) errs.push('Duplikat kode');
+          parsedCSV.push({ ...row, errs, valid: errs.length === 0 });
+          added++;
+        }
+        sources.push(`MASTER ASET: ${added} item`);
+      }
+      if (hasMasterPL) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['MASTER PERLENGKAPAN'], { header: 1, defval: '' });
+        let added = 0;
+        for (let i = 4; i < rows.length; i++) {
+          const row = normalizeRow(rows[i], 'Perlengkapan');
+          if (!row) continue;
+          const errs = [];
+          if (parsedCSV.find(x => x.kode.toLowerCase() === row.kode.toLowerCase())) errs.push('Duplikat kode');
+          parsedCSV.push({ ...row, errs, valid: errs.length === 0 });
+          added++;
+        }
+        sources.push(`MASTER PERLENGKAPAN: ${added} item`);
+      }
+    } else {
+      // Format bebas — baca sheet pertama, deteksi header otomatis
+      const wsName = wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { header: 1, defval: '' });
+      // Cari baris header (ada kata 'nama' atau 'kode')
+      let hdrIdx = 0;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const str = rows[i].join(' ').toLowerCase();
+        if (str.includes('nama') || str.includes('kode') || str.includes('sku')) { hdrIdx = i; break; }
+      }
+      const hdr = rows[hdrIdx].map(h => String(h).toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
+      const hMap = {};
+      const aliases = {
+        nama:['nama','name','namabarang','namaasset'], kode:['kode','code','sku','id'],
+        kategori:['kategori','category','kat','jenis'], lokasi:['lokasi','location','tempat'],
+        kondisi:['kondisi','condition'], status:['status'], pj:['pj','pic'],
+        nilai:['nilai','value','harga','price'], tgl:['tgl','tanggal','date'],
+        gdrive:['gdrive','foto','url','link'], keterangan:['keterangan','note','catatan','ket'],
+      };
+      hdr.forEach((h, i) => {
+        for (const [field, alts] of Object.entries(aliases)) {
+          if (alts.includes(h) && hMap[field] === undefined) hMap[field] = i;
+        }
+      });
+      for (let i = hdrIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const g = f => hMap[f] !== undefined ? String(r[hMap[f]] || '').trim() : '';
+        const nama = g('nama'), kode = g('kode');
+        if (!nama && !kode) continue;
+        const errs = [];
+        if (!nama) errs.push('Nama kosong');
+        if (!kode) errs.push('Kode kosong');
+        if (kode && parsedCSV.find(x => x.kode?.toLowerCase() === kode.toLowerCase())) errs.push('Duplikat kode');
+        parsedCSV.push({
+          nama, kode,
+          kategori:   g('kategori') || skuToKategori(kode),
+          lokasi:     g('lokasi'), kondisi: g('kondisi') || 'Baik',
+          status:     g('status') || 'Aktif', pj: g('pj'),
+          nilai:      parseFloat(g('nilai').replace(/[^0-9.]/g,'')) || 0,
+          tgl:        g('tgl'), gdrive: g('gdrive'), keterangan: g('keterangan'),
+          errs, valid: errs.length === 0,
+        });
+      }
+      sources.push(`Sheet "${wsName}": ${parsedCSV.length} item`);
+    }
+    renderImportPreview(sources.join(' · '));
+  } catch(e) {
+    hideImportLoading();
+    toast('❌ Gagal baca Excel: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+// ── CSV PARSER ──
 function parseCSV(raw) {
-  const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim());
+  const lines = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l => l.trim());
   if (lines.length < 2) { toast('⚠ File CSV kosong!', 'warn'); return; }
   const hdr = csvLine(lines[0]);
   const hMap = {};
   hdr.forEach((h, i) => {
-    const k = h.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-    const map = { nama: ['nama','name','namabarang'], kode: ['kode','code','sku','id'], kategori: ['kategori','category','kat','jenis'], lokasi: ['lokasi','location','tempat'], kondisi: ['kondisi','condition'], status: ['status'], pj: ['pj','pic','penanggungjawab'], nilai: ['nilai','value','harga','price'], tgl: ['tgl','tanggal','date'], gdrive: ['gdrive','foto','url','link'], keterangan: ['keterangan','note','catatan','ket'] };
-    for (const [f, alts] of Object.entries(map)) { if (alts.includes(k) && hMap[f] === undefined) hMap[f] = i; }
+    const k = h.toLowerCase().trim().replace(/[^a-z0-9]/g,'');
+    const aliases = {
+      nama:['nama','name','namabarang'], kode:['kode','code','sku','id'],
+      kategori:['kategori','category','kat','jenis'], lokasi:['lokasi','location','tempat'],
+      kondisi:['kondisi','condition'], status:['status'], pj:['pj','pic'],
+      nilai:['nilai','value','harga','price'], tgl:['tgl','tanggal','date'],
+      gdrive:['gdrive','foto','url','link'], keterangan:['keterangan','note','catatan','ket'],
+    };
+    for (const [f, alts] of Object.entries(aliases)) { if (alts.includes(k) && hMap[f] === undefined) hMap[f] = i; }
   });
   if (hMap.nama === undefined && hMap.kode === undefined) { toast('⚠ Kolom "nama" atau "kode" tidak ditemukan!', 'warn'); return; }
   parsedCSV = [];
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
     const cols = csvLine(lines[i]);
-    const g = f => (hMap[f] !== undefined ? (cols[hMap[f]] || '').trim() : '');
+    const g = f => hMap[f] !== undefined ? (cols[hMap[f]] || '').trim() : '';
     const nama = g('nama'), kode = g('kode');
     const errs = [];
     if (!nama) errs.push('Nama kosong');
     if (!kode) errs.push('Kode kosong');
-    if (kode && parsedCSV.find(r => r.kode?.toLowerCase() === kode.toLowerCase())) errs.push('Duplikat dalam file');
-    const isValid = !errs.filter(e => !e.includes('update')).length;
-    parsedCSV.push({ nama, kode, kategori: g('kategori') || 'Lainnya', lokasi: g('lokasi'), kondisi: g('kondisi') || 'Baik', status: g('status') || 'Aktif', pj: g('pj'), nilai: parseFloat(g('nilai').replace(/[^0-9.]/g, '')) || 0, tgl: g('tgl'), gdrive: g('gdrive'), keterangan: g('keterangan'), errs, valid: isValid });
+    if (kode && parsedCSV.find(r => r.kode?.toLowerCase() === kode.toLowerCase())) errs.push('Duplikat kode');
+    parsedCSV.push({
+      nama, kode,
+      kategori:   g('kategori') || skuToKategori(kode),
+      lokasi:     g('lokasi'), kondisi: g('kondisi') || 'Baik',
+      status:     g('status') || 'Aktif', pj: g('pj'),
+      nilai:      parseFloat(g('nilai').replace(/[^0-9.]/g,'')) || 0,
+      tgl:        g('tgl'), gdrive: g('gdrive'), keterangan: g('keterangan'),
+      errs, valid: errs.length === 0,
+    });
   }
-  renderCSVPreview();
+  renderImportPreview('CSV');
 }
 
 function csvLine(line) {
   const res = []; let cur = '', inQ = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (c === '"') { if (inQ && line[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
     else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
     else cur += c;
   }
   res.push(cur); return res;
 }
 
-function renderCSVPreview() {
+// ── PREVIEW ──
+function renderImportPreview(sourceLabel) {
   document.getElementById('import-upload').style.display = 'none';
   document.getElementById('import-preview').style.display = 'block';
   const valid = parsedCSV.filter(r => r.valid);
@@ -1628,36 +1841,47 @@ function renderCSVPreview() {
   document.getElementById('pv-total').textContent = parsedCSV.length;
   document.getElementById('pv-valid').textContent = valid.length;
   document.getElementById('pv-err').textContent   = errs.length;
+  document.getElementById('pv-source').textContent = sourceLabel || '';
   document.getElementById('confirm-import').textContent = `✅ Import ${valid.length} Aset`;
   document.getElementById('confirm-import').disabled = valid.length === 0;
   document.getElementById('pv-list').innerHTML = parsedCSV.map(r => {
     const bg = !r.valid ? '#fff8f8' : '#fff';
     return `<div class="prev-item" style="background:${bg}">
-      <div class="prev-hdr"><span class="prev-name">${!r.valid ? '❌' : '✅'} ${esc(r.nama || '(kosong)')}</span><span class="prev-kode">${esc(r.kode || '—')}</span></div>
-      <div style="font-size:11px;color:var(--t2)">${esc(r.kategori)} · ${esc(r.lokasi || '—')} · <span class="badge ${kCls(r.kondisi)}" style="font-size:10px;padding:1px 6px">${esc(r.kondisi)}</span></div>
+      <div class="prev-hdr"><span class="prev-name">${!r.valid?'❌':'✅'} ${esc(r.nama||'(kosong)')}</span><span class="prev-kode">${esc(r.kode||'—')}</span></div>
+      <div style="font-size:11px;color:var(--t2)">${esc(r.kategori)} · ${esc(r.lokasi||'—')} · <span class="badge ${kCls(r.kondisi)}" style="font-size:10px;padding:1px 6px">${esc(r.kondisi)}</span></div>
       ${r.errs.length ? `<div class="prev-err">⚠ ${r.errs.join(' · ')}</div>` : ''}
     </div>`;
   }).join('');
 }
 
+// ── CONFIRM IMPORT ──
 async function confirmImport() {
   const toImport = parsedCSV.filter(r => r.valid);
   if (!toImport.length) return;
-  document.getElementById('confirm-import').disabled = true;
-  document.getElementById('confirm-import').textContent = '⏳ Mengimport...';
+  const btn = document.getElementById('confirm-import');
+  btn.disabled = true;
+  btn.textContent = '⏳ Mengimport...';
   let done = 0;
   for (const r of toImport) {
-    const asset = { nama: r.nama, kode: r.kode, kategori: r.kategori, lokasi: r.lokasi, kondisi: r.kondisi, status: r.status, pj: r.pj, nilai: r.nilai, tgl: r.tgl, gdrive: r.gdrive, keterangan: r.keterangan, photo_url: '', created_at: Date.now(), updated_at: Date.now() };
+    const asset = {
+      nama: r.nama, kode: r.kode, kategori: r.kategori, lokasi: r.lokasi,
+      kondisi: r.kondisi, status: r.status, pj: r.pj, nilai: r.nilai,
+      tgl: r.tgl, gdrive: r.gdrive, keterangan: r.keterangan,
+      photo_url: '', created_at: Date.now(), updated_at: Date.now()
+    };
     if (!isDemo && DB) {
       const ref = DB.ref('assets').push();
       await ref.set(asset);
-      pushEvent({ asset_id: ref.key, asset_kode: r.kode, asset_nama: r.nama, type: 'REGISTRASI', kondisi: r.kondisi, lokasi: r.lokasi, catatan: 'Import CSV' });
+      pushEvent({ asset_id: ref.key, asset_kode: r.kode, asset_nama: r.nama, type: 'REGISTRASI', kondisi: r.kondisi, lokasi: r.lokasi, catatan: `Import file (${r.keterangan?.split(' | ')[0] || ''})` });
     } else {
       const pid = 'L' + Date.now() + '_' + done;
       ASSETS[pid] = asset;
-      pushEvent({ asset_id: pid, asset_kode: r.kode, asset_nama: r.nama, type: 'REGISTRASI', kondisi: r.kondisi, lokasi: r.lokasi, catatan: 'Import CSV' });
+      pushEvent({ asset_id: pid, asset_kode: r.kode, asset_nama: r.nama, type: 'REGISTRASI', kondisi: r.kondisi, lokasi: r.lokasi, catatan: `Import file (${r.keterangan?.split(' | ')[0] || ''})` });
     }
     done++;
+    // Update progress
+    if (done % 10 === 0) btn.textContent = `⏳ ${done}/${toImport.length}...`;
+    await new Promise(res => setTimeout(res, 0)); // yield to UI
   }
   if (isDemo) { saveDemo(); refreshAll(); }
   closeSheet('sh-import');
@@ -1666,11 +1890,21 @@ async function confirmImport() {
   switchPage('aset');
 }
 
+// ── RESET ──
 function resetImport() {
   parsedCSV = [];
   document.getElementById('import-upload').style.display = 'block';
   document.getElementById('import-preview').style.display = 'none';
-  document.getElementById('csv-input').value = '';
+  document.getElementById('import-loading').style.display = 'none';
+  const inp = document.getElementById('file-import-input');
+  if (inp) inp.value = '';
+}
+
+// ── TEMPLATE CSV ──
+function downloadTemplate() {
+  const csv = 'nama,kode,kategori,lokasi,kondisi,status,pj,nilai,tgl,gdrive,keterangan\nPrinter Epson L3210,RPM-PRN-2024-001,Mesin Produksi,Store DMB,Baik,Aktif,Anton,5000000,2024-01-15,,\nLaptop Lenovo,RPM-IT-2024-001,Inventaris IT,Head Office,Baik,Aktif,Budi,12000000,2024-02-01,,\n';
+  saveAs(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'template_import_aset.csv');
+  toast('✅ Template didownload!');
 }
 
 // ══════════════════════════════════════════════════════
@@ -1784,7 +2018,7 @@ window.addEventListener('DOMContentLoaded', () => {
   applyLayout();
   window.addEventListener('resize', applyLayout);
 
-  // CSV drag drop
+  // CSV/Excel drag drop
   const dz = document.getElementById('drop-zone');
   if (dz) {
     dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
@@ -1792,8 +2026,22 @@ window.addEventListener('DOMContentLoaded', () => {
     dz.addEventListener('drop', e => {
       e.preventDefault(); dz.classList.remove('drag');
       const f = e.dataTransfer.files[0];
-      if (f && f.name.endsWith('.csv')) { const r = new FileReader(); r.onload = ev => parseCSV(ev.target.result); r.readAsText(f, 'UTF-8'); }
-      else toast('⚠ Pilih file .csv', 'warn');
+      if (!f) return;
+      const ext = f.name.split('.').pop().toLowerCase();
+      if (['csv','xlsx','xls'].includes(ext)) {
+        showImportLoading('Membaca file...');
+        if (ext === 'csv') {
+          const r = new FileReader();
+          r.onload = ev => { parseCSV(ev.target.result); hideImportLoading(); };
+          r.readAsText(f, 'UTF-8');
+        } else {
+          const r = new FileReader();
+          r.onload = ev => { parseExcel(ev.target.result, f.name); hideImportLoading(); };
+          r.readAsArrayBuffer(f);
+        }
+      } else {
+        toast('⚠ Pilih file .xlsx, .xls, atau .csv', 'warn');
+      }
     });
   }
 
