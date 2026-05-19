@@ -808,7 +808,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="form-field"><label>No. Seri / Merek</label><input class="form-input" id="f-seri" placeholder="Nomor seri atau merek"/></div>
       <div class="form-field"><label>Keterangan</label><textarea class="form-textarea" id="f-keterangan" placeholder="Keterangan tambahan..."></textarea></div>
       <input type="hidden" id="f-id"/>
-      <button class="btn btn-primary btn-block" onclick="saveAsset()" style="margin-top:4px">💾 Simpan Aset</button>
+      <button class="btn btn-primary btn-block" id="save-asset-btn" onclick="saveAsset()" style="margin-top:4px">💾 Simpan Aset</button>
     </div>
   </div>
 </div>
@@ -1169,58 +1169,75 @@ function openEditSheet(id) {
 async function saveAsset() {
   const nama = document.getElementById('f-nama').value.trim();
   const kode = document.getElementById('f-kode').value.trim();
-  if (!nama || !kode) { toast('⚠ Nama dan Kode wajib diisi!'); return; }
+  if (!nama) { toast('⚠ Nama aset wajib diisi!'); return; }
+  if (!kode) { toast('⚠ Kode aset wajib diisi!'); return; }
 
-  const saveBtn = document.querySelector('#sheet-asset .btn-primary');
-  saveBtn.disabled = true;
-  saveBtn.textContent = '⏳ Menyimpan...';
-
-  // Determine asset ID for photo upload
-  const assetId = editingId || ('new_' + Date.now());
-
-  // Upload photo if there's a pending file
-  let photoUrl = editingId ? (ASSETS[editingId]?.photo_url || '') : '';
-  if (pendingPhotoFile) {
-    toast('⏳ Upload foto...');
-    const uploaded = await compressAndUploadPhoto(assetId);
-    if (uploaded) photoUrl = uploaded;
+  // Cek duplikat kode (kecuali saat edit aset yang sama)
+  const dupFound = Object.entries(ASSETS).find(([id, a]) =>
+    a.kode?.toLowerCase() === kode.toLowerCase() && id !== editingId
+  );
+  if (dupFound) {
+    toast('⚠ Kode aset "' + kode + '" sudah digunakan aset lain!');
+    return;
   }
 
-  const asset = {
-    nama, kode,
-    kategori: document.getElementById('f-kategori').value,
-    lokasi: document.getElementById('f-lokasi').value.trim(),
-    kondisi: document.getElementById('f-kondisi').value,
-    status: document.getElementById('f-status').value,
-    pj: document.getElementById('f-pj').value.trim(),
-    seri: document.getElementById('f-seri').value.trim(),
-    nilai: parseFloat(document.getElementById('f-nilai').value) || 0,
-    tgl: document.getElementById('f-tgl').value,
-    gdrive: document.getElementById('f-gdrive').value.trim(),
-    photo_url: photoUrl,
-    keterangan: document.getElementById('f-keterangan').value.trim(),
-    updated_at: Date.now()
-  };
-  const isNew = !editingId;
-  if (isNew) asset.created_at = Date.now();
-  closeSheet('sheet-asset');
-  resetPhotoForm();
-  saveBtn.disabled = false;
-  saveBtn.textContent = '💾 Simpan Aset';
+  const saveBtn = document.getElementById('save-asset-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Menyimpan...'; }
 
-  if (!isDemo && DB) {
-    const ref = editingId ? DB.ref('assets/'+editingId) : DB.ref('assets').push();
-    const pid = editingId || ref.key;
-    ref.set(asset).then(() => {
-      if (isNew) addEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
-      toast('✅ Aset tersimpan');
-    });
-  } else {
-    const pid = editingId || ('L' + Date.now());
-    ASSETS[pid] = asset;
-    if (isNew) addEventLocal({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
-    saveDemo(); refreshAll();
-    toast('✅ Aset tersimpan');
+  try {
+    // Upload foto jika ada
+    let photoUrl = editingId ? (ASSETS[editingId]?.photo_url || '') : '';
+    if (pendingPhotoFile) {
+      toast('⏳ Kompres & simpan foto...');
+      const uploaded = await compressAndUploadPhoto();
+      if (uploaded) photoUrl = uploaded;
+    }
+
+    const asset = {
+      nama, kode,
+      kategori: document.getElementById('f-kategori').value,
+      lokasi:   document.getElementById('f-lokasi').value.trim(),
+      kondisi:  document.getElementById('f-kondisi').value,
+      status:   document.getElementById('f-status').value,
+      pj:       document.getElementById('f-pj').value.trim(),
+      seri:     document.getElementById('f-seri').value.trim(),
+      nilai:    parseFloat(document.getElementById('f-nilai').value) || 0,
+      tgl:      document.getElementById('f-tgl').value,
+      gdrive:   document.getElementById('f-gdrive').value.trim(),
+      photo_url: photoUrl,
+      keterangan: document.getElementById('f-keterangan').value.trim(),
+      updated_at: Date.now()
+    };
+    if (!editingId) asset.created_at = Date.now();
+
+    closeSheet('sheet-asset');
+    resetPhotoForm();
+
+    if (!isDemo && DB) {
+      const ref = editingId
+        ? DB.ref('assets/' + editingId)
+        : DB.ref('assets').push();
+      const pid = editingId || ref.key;
+      await ref.set(asset);
+      if (!editingId) {
+        addEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
+      }
+      toast('✅ Aset "' + nama + '" berhasil disimpan!');
+    } else {
+      const pid = editingId || ('L' + Date.now());
+      ASSETS[pid] = asset;
+      if (!editingId) {
+        addEventLocal({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
+      }
+      saveDemo();
+      refreshAll();
+      toast('✅ Aset "' + nama + '" berhasil disimpan!');
+    }
+  } catch (err) {
+    console.error('saveAsset error:', err);
+    toast('❌ Gagal simpan: ' + err.message);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Simpan Aset'; }
   }
 }
 
