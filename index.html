@@ -752,7 +752,7 @@ function initFirebase(cfg) {
       renderFeed();
       renderRiwayat();
       if (detailId) renderDetailTL(detailId);
-    });
+    }, err => console.error('Events listener error:', err));
 
     setConn('off', 'Menghubungkan...');
 
@@ -920,10 +920,17 @@ function doLogout() {
 function pushEvent(ev) {
   const full = { ...ev, user: USER.nama, timestamp: Date.now() };
   if (!isDemo && DB) {
-    DB.ref('events').push(full);
+    // Push ke Firebase — listener akan broadcast ke semua device
+    DB.ref('events').push(full)
+      .catch(e => console.error('pushEvent error:', e));
+    // Langsung update lokal untuk respons instan di device ini
+    EVENTS.unshift({ _id: 'local_' + Date.now(), ...full });
+    renderFeed();
+    renderRiwayat();
   } else {
     EVENTS.unshift({ _id: 'e' + Date.now(), ...full });
-    renderFeed(); renderRiwayat();
+    renderFeed();
+    renderRiwayat();
     saveDemo();
   }
 }
