@@ -1219,13 +1219,16 @@ async function saveAsset() {
         : DB.ref('assets').push();
       const pid = editingId || ref.key;
       await ref.set(asset);
+      // Langsung update lokal tanpa nunggu listener Firebase
+      ASSETS[pid] = { ...asset };
       if (!editingId) {
         addEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
       }
+      refreshAll();
       toast('✅ Aset "' + nama + '" berhasil disimpan!');
     } else {
       const pid = editingId || ('L' + Date.now());
-      ASSETS[pid] = asset;
+      ASSETS[pid] = { ...asset };
       if (!editingId) {
         addEventLocal({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
       }
@@ -1243,10 +1246,19 @@ async function saveAsset() {
 
 function deleteAsset(id) {
   if (!confirm('Hapus aset ini?')) return;
-  if (!isDemo && DB) DB.ref('assets/'+id).remove();
-  else { delete ASSETS[id]; saveDemo(); refreshAll(); }
+  if (!isDemo && DB) {
+    DB.ref('assets/' + id).remove().then(() => {
+      delete ASSETS[id];
+      refreshAll();
+      toast('🗑 Aset dihapus');
+    }).catch(e => toast('❌ Gagal hapus: ' + e.message));
+  } else {
+    delete ASSETS[id];
+    saveDemo();
+    refreshAll();
+    toast('🗑 Aset dihapus');
+  }
   closeSheet('sheet-detail');
-  toast('🗑 Aset dihapus');
 }
 
 // ══════════════════════════════════════
@@ -2016,8 +2028,13 @@ function applyRole(role) {
 function startFirebaseListeners() {
   if (isDemo || !DB) return;
   DB.ref('assets').on('value', s => {
-    ASSETS = s.val() || {};
+    const incoming = s.val() || {};
+    // Merge incoming dengan local (local lebih priority untuk perubahan baru)
+    ASSETS = incoming;
     refreshAll();
+  }, err => {
+    console.error('Assets listener error:', err);
+    toast('⚠ Gagal baca data: ' + err.message);
   });
   DB.ref('events').orderByChild('timestamp').limitToLast(200).on('value', s => {
     EVENTS = [];
@@ -2025,6 +2042,8 @@ function startFirebaseListeners() {
     renderFeed();
     renderRiwayat();
     if (detailAssetId) renderDetailTimeline(detailAssetId);
+  }, err => {
+    console.error('Events listener error:', err);
   });
 }
 
