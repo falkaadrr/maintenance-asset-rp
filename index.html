@@ -402,6 +402,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn bs bblock" onclick="openAddSheet()">➕ Tambah Aset</button>
         <button class="btn bs bblock" onclick="switchPage('qr')">🔲 QR Code</button>
         <button class="btn bs bblock" onclick="exportCSV()">📤 Export CSV</button>
+        <button class="btn bs bblock admin-only" onclick="exportExcel()" style="display:none">📊 Export Excel RPM</button>
         <button class="btn bs bblock admin-only" onclick="openSheet('sh-import')" style="grid-column:1/-1;display:none">📥 Import Excel / CSV</button>
         <button class="btn bs bblock admin-only" onclick="openUsersSheet()" style="grid-column:1/-1;display:none">👥 Kelola Pengguna</button>
       </div>
@@ -422,7 +423,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div style="display:flex;gap:8px;padding:10px 16px 2px">
       <button class="btn bs bsm admin-only" style="flex:1;display:none" onclick="openSheet('sh-import')">📥 Import Excel / CSV</button>
-      <button class="btn bs bsm" style="flex:1" onclick="exportCSV()">📤 Export CSV</button>
+      <button class="btn bs bsm" style="flex:1" onclick="exportCSV()">📤 CSV</button>
+      <button class="btn bs bsm admin-only" style="flex:1;display:none" onclick="exportExcel()">📊 Excel</button>
     </div>
     <div style="height:6px"></div>
     <div id="aset-list" style="padding:0 16px"></div>
@@ -1986,6 +1988,152 @@ function downloadTemplate() {
 // ══════════════════════════════════════════════════════
 // EXPORT CSV
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// EXPORT EXCEL — Format RPM (identik dengan laporan aset)
+// ══════════════════════════════════════════════════════
+function exportExcel() {
+  const arr = Object.values(ASSETS);
+  if (!arr.length) { toast('⚠ Belum ada aset!', 'warn'); return; }
+  toast('⏳ Generating Excel...');
+  setTimeout(() => {
+    try {
+      const wb = XLSX.utils.book_new();
+      const YEAR_NOW = new Date().getFullYear();
+      const MASA_MANFAAT = 10;
+      const LOKASI_MAP = {
+        HO:'Head Office', DMB:'Ruangprint Daan Mogot Baru',
+        CTR:'Ruangprint Citra Raya', GDS:'Ruangprint Gading Serpong',
+        CGK:'Ruangprint Cengkareng', BKS:'Ruangprint Bekasi'
+      };
+      const TIPE_MAP = { HO:'HO', DMB:'Store', CTR:'Store', GDS:'Store', CGK:'Franchise/BLP', BKS:'Franchise/BLP' };
+      const LOCS = ['HO','DMB','CTR','GDS','CGK','BKS'];
+
+      // Pisahkan AT vs PL
+      const atArr = arr.filter(a => str(a.kode).includes('-AT-') || (!str(a.kode).includes('-PL-') && str(a.kode).includes('-AT-')));
+      const plArr = arr.filter(a => str(a.kode).includes('-PL-'));
+      const otherArr = arr.filter(a => !str(a.kode).includes('-AT-') && !str(a.kode).includes('-PL-'));
+      const allAT = [...atArr, ...otherArr];
+      const allPL = [...plArr];
+
+      function str(v) { return String(v || ''); }
+      function getLoc(a) { const p = str(a.kode).split('-'); return p[p.length-1].toUpperCase(); }
+      function getLoaded(a) {
+        const tahun = parseInt(str(a.tgl).slice(0,4)) || 2020;
+        const nilai = Number(a.nilai) || 0;
+        const umur  = Math.max(0, YEAR_NOW - tahun);
+        const dep   = nilai / MASA_MANFAAT;
+        const akum  = Math.min(dep * umur, nilai);
+        return { tahun, nilai, umur, dep: Math.round(dep), akum: Math.round(akum), nb: Math.max(0, Math.round(nilai - akum)) };
+      }
+      function cleanKet(ket) {
+        return str(ket).replace(/^Tipe: Aset Tetap \| /,'').replace(/^Tipe: Perlengkapan \| /,'');
+      }
+      function groupByLoc(items) {
+        const d = {}; LOCS.forEach(l => d[l] = []);
+        items.forEach(a => {
+          const loc = getLoc(a);
+          if (d[loc]) d[loc].push(a); else d[LOCS[0]].push(a);
+        });
+        return d;
+      }
+
+      // ── Build sheet data ──
+      function makeATRows(items, title, subtitle) {
+        const rows = [];
+        rows.push([title]);
+        rows.push([subtitle]);
+        rows.push([]);
+        rows.push(['NO.','SKU LAMA (HISTORY)','SKU BARU (SOP)','NAMA ASET','MEREK','TIPE / MODEL','SERIAL NUMBER','ENTITAS','CABANG / LOKASI','RUANGAN','TAHUN','NILAI PEROLEHAN (Rp)','KONDISI BELI','STATUS','KONDISI','TAHUN SAAT INI','UMUR (THN)','MASA MANFAAT','AKUMULASI DEPRESIASI','DEPRESIASI/THN','NILAI BUKU','KETERANGAN']);
+        items.forEach((a, i) => {
+          const { tahun, nilai, umur, dep, akum, nb } = getLoaded(a);
+          const loc = getLoc(a);
+          const cab = str(a.lokasi).includes(' — ') ? str(a.lokasi).split(' — ')[0] : LOKASI_MAP[loc] || str(a.lokasi);
+          const rua = str(a.lokasi).includes(' — ') ? str(a.lokasi).split(' — ').slice(1).join(' — ') : '';
+          rows.push([i+1, null, str(a.kode), str(a.nama), null, null, null, loc, cab, rua, tahun, nilai, null, str(a.status||'AKTIF').toUpperCase(), str(a.kondisi||'Baik'), YEAR_NOW, umur, MASA_MANFAAT, akum, dep, nb, cleanKet(a.keterangan)]);
+        });
+        return rows;
+      }
+
+      function makePLRows(items, title, subtitle) {
+        const rows = [];
+        rows.push([title]);
+        rows.push([subtitle]);
+        rows.push([]);
+        rows.push(['NO.','SKU LAMA (HISTORY)','SKU BARU (SOP)','NAMA ASET','MEREK','TIPE / MODEL','SERIAL NUMBER','ENTITAS','CABANG / LOKASI','RUANGAN','TAHUN','NILAI PEROLEHAN (Rp)','KONDISI BELI','STATUS','KONDISI','KETERANGAN']);
+        items.forEach((a, i) => {
+          const tahun = parseInt(str(a.tgl).slice(0,4)) || 2020;
+          const loc = getLoc(a);
+          const cab = str(a.lokasi).includes(' — ') ? str(a.lokasi).split(' — ')[0] : LOKASI_MAP[loc] || str(a.lokasi);
+          const rua = str(a.lokasi).includes(' — ') ? str(a.lokasi).split(' — ').slice(1).join(' — ') : '';
+          rows.push([i+1, null, str(a.kode), str(a.nama), null, null, null, loc, cab, rua, tahun, Number(a.nilai)||0, null, str(a.status||'AKTIF').toUpperCase(), str(a.kondisi||'Baik'), cleanKet(a.keterangan)]);
+        });
+        return rows;
+      }
+
+      function makeSummaryRows() {
+        const atGrp = groupByLoc(allAT);
+        const plGrp = groupByLoc(allPL);
+        const rows = [];
+        rows.push(['RINGKASAN ASET & PERLENGKAPAN — PT RUANG PERKASA MANDIRI (RUANGPRINT)']);
+        rows.push([]);
+        rows.push(['📦 ASET TETAP (AT)']);
+        rows.push(['NO.','NAMA ENTITAS','KODE','TIPE','TOTAL ASET','TOTAL NILAI (Rp)','AKUMULASI DEPRESIASI','NILAI BUKU']);
+        let atTotal = {n:0, nilai:0, akum:0, nb:0};
+        LOCS.forEach((loc, i) => {
+          const items = atGrp[loc] || [];
+          const nilai = items.reduce((s,a) => s + (Number(a.nilai)||0), 0);
+          const akum  = items.reduce((s,a) => s + getLoaded(a).akum, 0);
+          const nb    = items.reduce((s,a) => s + getLoaded(a).nb, 0);
+          atTotal.n += items.length; atTotal.nilai += nilai; atTotal.akum += akum; atTotal.nb += nb;
+          rows.push([i+1, LOKASI_MAP[loc], loc, TIPE_MAP[loc], items.length, nilai, akum, nb]);
+        });
+        rows.push([null,'TOTAL KESELURUHAN',null,null,atTotal.n,atTotal.nilai,atTotal.akum,atTotal.nb]);
+        rows.push([]);
+        rows.push(['🗂️ PERLENGKAPAN (PL)']);
+        rows.push(['NO.','NAMA ENTITAS','KODE','TIPE','TOTAL PERLENGKAPAN','TOTAL NILAI (Rp)']);
+        let plTotal = {n:0, nilai:0};
+        LOCS.forEach((loc, i) => {
+          const items = plGrp[loc] || [];
+          const nilai = items.reduce((s,a) => s + (Number(a.nilai)||0), 0);
+          plTotal.n += items.length; plTotal.nilai += nilai;
+          rows.push([i+1, LOKASI_MAP[loc], loc, TIPE_MAP[loc], items.length, nilai]);
+        });
+        rows.push([null,'TOTAL KESELURUHAN',null,null,plTotal.n,plTotal.nilai]);
+        return rows;
+      }
+
+      // ── Add sheets ──
+      const atGrp = groupByLoc(allAT);
+      const plGrp = groupByLoc(allPL);
+      const totalAtVal = allAT.reduce((s,a) => s+(Number(a.nilai)||0), 0);
+      const totalPlVal = allPL.reduce((s,a) => s+(Number(a.nilai)||0), 0);
+
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(makeATRows(allAT, 'MASTER ASET TETAP — PT RUANG PERKASA MANDIRI (RUANGPRINT)', `Total: ${allAT.length} aset | Total Nilai: Rp ${totalAtVal.toLocaleString('id-ID')}`)), 'MASTER ASET');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(makePLRows(allPL, 'MASTER PERLENGKAPAN — PT RUANG PERKASA MANDIRI (RUANGPRINT)', `Total: ${allPL.length} perlengkapan | Total Nilai: Rp ${totalPlVal.toLocaleString('id-ID')}`)), 'MASTER PERLENGKAPAN');
+
+      LOCS.forEach(loc => {
+        const items = plGrp[loc] || [];
+        const val = items.reduce((s,a) => s+(Number(a.nilai)||0), 0);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(makePLRows(items, `PERLENGKAPAN — RUANGPRINT ${(LOKASI_MAP[loc]||loc).toUpperCase()}`, `Tipe: ${TIPE_MAP[loc]} | Kode: ${loc} | Total: ${items.length} perlengkapan | Total Nilai: Rp ${val.toLocaleString('id-ID')}`)), `PL-${loc}`);
+      });
+      LOCS.forEach(loc => {
+        const items = atGrp[loc] || [];
+        const val = items.reduce((s,a) => s+(Number(a.nilai)||0), 0);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(makeATRows(items, `ASET TETAP — RUANGPRINT ${(LOKASI_MAP[loc]||loc).toUpperCase()}`, `Tipe: ${TIPE_MAP[loc]} | Kode: ${loc} | Total: ${items.length} aset | Total Nilai: Rp ${val.toLocaleString('id-ID')}`)), `AT-${loc}`);
+      });
+
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(makeSummaryRows()), 'SUMMARY');
+
+      const date = new Date().toISOString().slice(0,10).replace(/-/g,'');
+      XLSX.writeFile(wb, `LAP_ASET_RPM_${date}.xlsx`);
+      toast('✅ Excel berhasil didownload!');
+    } catch(e) {
+      toast('❌ Gagal export: ' + e.message, 'err');
+      console.error(e);
+    }
+  }, 100);
+}
+
 function exportCSV() {
   let csv = 'Kode,Nama,Kategori,Lokasi,Kondisi,Status,PJ,Nilai,Tgl Perolehan,Scan Terakhir\n';
   Object.values(ASSETS).forEach(a => {
