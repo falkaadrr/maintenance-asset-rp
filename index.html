@@ -575,29 +575,127 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- ADD/EDIT ASSET -->
 <div class="sheet-bg" id="sh-asset" onclick="bgClose('sh-asset',event)">
-  <div class="sheet">
+  <div class="sheet" style="max-width:640px">
     <div class="shdl"></div>
-    <div class="shhdr"><h3 id="sh-asset-title">Tambah Aset</h3><button class="btn bs bsm" onclick="closeSheet('sh-asset')">✕</button></div>
+    <div class="shhdr">
+      <h3 id="sh-asset-title">Tambah Aset</h3>
+      <button class="btn bs bsm" onclick="closeSheet('sh-asset')">✕</button>
+    </div>
     <div class="shbody">
-      <div class="form-field"><label>Nama Aset *</label><input class="fi" id="f-nama" placeholder="Printer Epson L3210"/></div>
-      <div class="form-field"><label>Kode Aset *</label><input class="fi" id="f-kode" placeholder="RPM-PRN-2024-001" style="font-family:monospace"/></div>
-      <div class="fgrid2">
-        <div class="form-field"><label>Kategori</label>
-          <select class="fi" id="f-kat"><option>Mesin Produksi</option><option>Peralatan Kantor</option><option>Furnitur</option><option>Elektronik</option><option>Kendaraan</option><option>Inventaris IT</option><option>Lainnya</option></select>
+
+      <!-- TIPE ASET -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+        <button class="btn bblock" id="tipe-at-btn" onclick="setTipeAset('AT')" style="border:2px solid var(--primary);background:var(--primary);color:#fff;padding:10px">📦 Aset Tetap (AT)</button>
+        <button class="btn bblock" id="tipe-pl-btn" onclick="setTipeAset('PL')" style="border:2px solid var(--border);background:var(--surface);color:var(--t2);padding:10px">🗂 Perlengkapan (PL)</button>
+      </div>
+
+      <!-- SKU SECTION -->
+      <div style="background:var(--blue-bg);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">🔑 Kode SKU SOP</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="form-field" style="margin:0">
+            <label>Kategori</label>
+            <select class="fi" id="f-kat-code" onchange="updateSKU();updateSubKat()">
+              <option value="MSN">MSN — Mesin Produksi</option>
+              <option value="ELK">ELK — Elektronik</option>
+              <option value="FRN">FRN — Furnitur</option>
+              <option value="KDR">KDR — Kendaraan</option>
+              <option value="PRL">PRL — Peralatan Kantor</option>
+            </select>
+          </div>
+          <div class="form-field" style="margin:0">
+            <label>Sub Kategori</label>
+            <select class="fi" id="f-sub-code" onchange="updateSKU()">
+            </select>
+          </div>
         </div>
-        <div class="form-field"><label>Kondisi</label>
-          <select class="fi" id="f-kondisi"><option>Baik</option><option>Kurang Baik</option><option>Rusak</option></select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="form-field" style="margin:0">
+            <label>Entitas / Lokasi</label>
+            <select class="fi" id="f-entitas" onchange="updateSKU()">
+              <option value="HO">HO — Head Office</option>
+              <option value="DMB">DMB — Daan Mogot Baru</option>
+              <option value="CTR">CTR — Citra Raya</option>
+              <option value="GDS">GDS — Gading Serpong</option>
+              <option value="CGK">CGK — Cengkareng</option>
+              <option value="BKS">BKS — Bekasi</option>
+            </select>
+          </div>
+          <div class="form-field" style="margin:0">
+            <label>Tahun Perolehan</label>
+            <input type="number" class="fi" id="f-tgl" placeholder="2024" min="2000" max="2099" onchange="updateSKU()"/>
+          </div>
+        </div>
+        <!-- SKU Preview -->
+        <div style="background:#fff;border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:10px;color:var(--t3);margin-bottom:2px">SKU BARU (SOP) — otomatis</div>
+            <div style="font-size:13px;font-weight:700;color:var(--blue);font-family:monospace" id="sku-preview">RP-AT-MSN-OTD-24-001-DMB</div>
+          </div>
+          <button class="btn bs bsm" onclick="copySKU()" style="flex-shrink:0">📋 Copy</button>
+        </div>
+        <div style="font-size:11px;color:var(--t3);margin-top:6px">No. urut otomatis dihitung dari jumlah aset yang sudah ada. Edit manual di kolom Kode di bawah jika perlu.</div>
+      </div>
+
+      <!-- IDENTITAS ASET -->
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Identitas Aset</div>
+      <div class="form-field"><label>Nama Aset *</label><input class="fi" id="f-nama" placeholder="Contoh: Mesin Outdoor, AC 1, Kursi Kerja..."/></div>
+      <div class="fgrid2">
+        <div class="form-field"><label>Merek</label><input class="fi" id="f-merek" placeholder="Flora, SHARP, SIMBADA..."/></div>
+        <div class="form-field"><label>Tipe / Model</label><input class="fi" id="f-model" placeholder="Tipe atau model produk"/></div>
+      </div>
+      <div class="form-field"><label>Serial Number</label><input class="fi" id="f-seri" placeholder="Nomor seri (jika ada)"/></div>
+      <div class="fgrid2">
+        <div class="form-field"><label>Kode SKU Baru *</label><input class="fi" id="f-kode" placeholder="RP-AT-MSN-OTD-24-001-DMB" style="font-family:monospace;font-size:12px"/></div>
+        <div class="form-field"><label>SKU Lama (History)</label><input class="fi" id="f-sku-lama" placeholder="RP/PL.xxx/0001/19/DMB" style="font-family:monospace;font-size:12px"/></div>
+      </div>
+
+      <!-- LOKASI -->
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px">Lokasi</div>
+      <div class="fgrid2">
+        <div class="form-field"><label>Cabang / Lokasi</label><input class="fi" id="f-cabang" placeholder="Head Office, Daan Mogot Baru..." readonly style="background:var(--sf2)"/></div>
+        <div class="form-field"><label>Ruangan</label><input class="fi" id="f-ruangan" placeholder="Outdoor, Indoor, Ruang Meeting..."/></div>
+      </div>
+
+      <!-- KONDISI & STATUS -->
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px">Kondisi & Status</div>
+      <div class="fgrid2">
+        <div class="form-field"><label>Kondisi Beli</label>
+          <select class="fi" id="f-kondisi-beli">
+            <option value="Baru">Baru</option>
+            <option value="Second">Second</option>
+            <option value="Lama">Lama</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Kondisi Saat Ini</label>
+          <select class="fi" id="f-kondisi">
+            <option>Baik</option><option>Kurang Baik</option><option>Rusak</option>
+          </select>
         </div>
         <div class="form-field"><label>Status</label>
-          <select class="fi" id="f-status"><option>Aktif</option><option>Dipinjam</option><option>Maintenance</option><option>Tidak Aktif</option></select>
+          <select class="fi" id="f-status">
+            <option value="AKTIF">AKTIF</option>
+            <option value="Mutasi">Mutasi</option>
+            <option value="Rusak">Rusak</option>
+          </select>
         </div>
-        <div class="form-field"><label>Lokasi</label><input class="fi" id="f-lokasi" placeholder="Store DMB, HO..."/></div>
+        <div class="form-field"><label>Masa Manfaat (thn)</label>
+          <input type="number" class="fi" id="f-masa-manfaat" value="10" min="1" max="50"/>
+        </div>
       </div>
-      <div class="form-field"><label>Penanggung Jawab</label><input class="fi" id="f-pj" placeholder="Nama PJ"/></div>
+
+      <!-- NILAI -->
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px">Nilai Perolehan</div>
       <div class="form-field">
-        <label>Foto Aset</label>
+        <label>Nilai Perolehan (Rp)</label>
+        <input type="number" class="fi" id="f-nilai" placeholder="0"/>
+      </div>
+
+      <!-- FOTO -->
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:4px">Foto & Dokumen</div>
+      <div class="form-field">
         <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
-          <div class="photo-ph" id="photo-ph"><div class="pi">📷</div><p>Ketuk untuk foto / pilih dari galeri</p></div>
+          <div class="photo-ph" id="photo-ph"><div class="pi">📷</div><p>Foto dari kamera atau galeri</p></div>
           <img id="photo-prev" style="display:none"/>
           <button class="photo-chg" id="photo-chg" style="display:none" onclick="event.stopPropagation();document.getElementById('photo-input').click()">Ganti</button>
         </div>
@@ -605,14 +703,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Atau link Google Drive:</div>
         <input class="fi" id="f-gdrive" placeholder="https://drive.google.com/file/d/..."/>
       </div>
-      <div class="fgrid2">
-        <div class="form-field"><label>Nilai (Rp)</label><input type="number" class="fi" id="f-nilai" placeholder="0"/></div>
-        <div class="form-field"><label>Tgl Perolehan</label><input type="date" class="fi" id="f-tgl"/></div>
-      </div>
-      <div class="form-field"><label>No. Seri / Merek</label><input class="fi" id="f-seri" placeholder="Nomor seri"/></div>
+
       <div class="form-field"><label>Keterangan</label><textarea class="fi ftx" id="f-ket" placeholder="Keterangan tambahan..."></textarea></div>
+
       <input type="hidden" id="f-id"/>
-      <button class="btn bp bblock" id="save-btn" onclick="saveAsset()">💾 Simpan Aset</button>
+      <input type="hidden" id="f-tipe-aset" value="AT"/>
+      <button class="btn bp bblock" id="save-btn" onclick="saveAsset()" style="margin-top:4px">💾 Simpan Aset</button>
     </div>
   </div>
 </div>
@@ -960,18 +1056,84 @@ function updateAssetMeta(id, upd) {
 // ══════════════════════════════════════════════════════
 // ASSET CRUD
 // ══════════════════════════════════════════════════════
+// ── Sub-kategori map ──
+const SUB_KAT = {
+  MSN:[{v:'OTD',l:'OTD — Mesin Outdoor'},{v:'IND',l:'IND — Mesin Indoor'},{v:'CUT',l:'CUT — Cutting'},{v:'LAM',l:'LAM — Laminating'},{v:'UVR',l:'UVR — UV'},{v:'A3',l:'A3 — Printer A3'},{v:'PRS',l:'PRS — Press'},{v:'POT',l:'POT — Potong'},{v:'JLD',l:'JLD — Jilid'},{v:'FNS',l:'FNS — Finishing'},{v:'AKR',l:'AKR — Akrilik'},{v:'FTD',l:'FTD — Foto Digital'},{v:'LAS',l:'LAS — Laser'},{v:'RTR',l:'RTR — Router'},{v:'TK',l:'TK — Toko'}],
+  ELK:[{v:'AC',l:'AC — Air Conditioner'},{v:'CPU',l:'CPU — Komputer'},{v:'LPT',l:'LPT — Laptop'},{v:'MON',l:'MON — Monitor'},{v:'PRT',l:'PRT — Printer'},{v:'TV',l:'TV — Televisi'},{v:'ABS',l:'ABS — CCTV/Absen'},{v:'HP',l:'HP — Handphone'},{v:'PBX',l:'PBX — Telepon'},{v:'KLK',l:'KLK — Kulkas'},{v:'UPS',l:'UPS — UPS'},{v:'HDD',l:'HDD — Storage'},{v:'TAB',l:'TAB — Tablet'},{v:'CTV',l:'CTV — Kabel TV'}],
+  FRN:[{v:'CHR',l:'CHR — Kursi'},{v:'MJA',l:'MJA — Meja'},{v:'RAK',l:'RAK — Rak'},{v:'LMR',l:'LMR — Lemari'},{v:'ETA',l:'ETA — Etalase'},{v:'SLB',l:'SLB — Partisi'},{v:'RKL',l:'RKL — Reklame'},{v:'LKS',l:'LKS — Loker'}],
+  KDR:[{v:'MOB',l:'MOB — Mobil'},{v:'MTR',l:'MTR — Motor'}],
+  PRL:[{v:'KMP',l:'KMP — Kompor/Dapur'},{v:'APR',l:'APR — Alat Produksi'},{v:'TLB',l:'TLB — Toolbox'},{v:'BKL',l:'BKL — Bangku'},{v:'FNS',l:'FNS — Finishing Tools'},{v:'STG',l:'STG — Storage'},{v:'OTH',l:'OTH — Lainnya'}],
+};
+const ENTITAS_MAP = {HO:'Head Office',DMB:'Daan Mogot Baru',CTR:'Citra Raya',GDS:'Gading Serpong',CGK:'Cengkareng',BKS:'Bekasi'};
+const KAT_LABEL = {MSN:'Mesin Produksi',ELK:'Elektronik',FRN:'Furnitur',KDR:'Kendaraan',PRL:'Peralatan Kantor'};
+
+function setTipeAset(tipe) {
+  document.getElementById('f-tipe-aset').value = tipe;
+  const atBtn = document.getElementById('tipe-at-btn');
+  const plBtn = document.getElementById('tipe-pl-btn');
+  if (!atBtn || !plBtn) return;
+  const activeStyle = 'border:2px solid var(--primary);background:var(--primary);color:#fff;padding:10px;width:100%;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer';
+  const inactiveStyle = 'border:2px solid var(--border);background:var(--surface);color:var(--t2);padding:10px;width:100%;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer';
+  atBtn.style.cssText = tipe === 'AT' ? activeStyle : inactiveStyle;
+  plBtn.style.cssText = tipe === 'PL' ? activeStyle : inactiveStyle;
+  updateSKU();
+}
+
+function updateSubKat() {
+  const kat = document.getElementById('f-kat-code')?.value || 'MSN';
+  const sub = document.getElementById('f-sub-code');
+  if (!sub) return;
+  sub.innerHTML = (SUB_KAT[kat] || []).map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+  updateSKU();
+}
+
+function updateSKU() {
+  const tipe    = document.getElementById('f-tipe-aset')?.value || 'AT';
+  const kat     = document.getElementById('f-kat-code')?.value || 'MSN';
+  const sub     = document.getElementById('f-sub-code')?.value || 'OTD';
+  const entitas = document.getElementById('f-entitas')?.value || 'DMB';
+  const tahun   = String(document.getElementById('f-tgl')?.value || new Date().getFullYear()).slice(-2);
+  const cabEl   = document.getElementById('f-cabang');
+  if (cabEl) cabEl.value = ENTITAS_MAP[entitas] || entitas;
+  const existing = Object.values(ASSETS).filter(a => {
+    const k = String(a.kode||'').toUpperCase();
+    return k.includes('-' + tipe + '-' + kat + '-' + sub + '-') && k.endsWith('-' + entitas);
+  });
+  const noUrut = String(existing.length + 1).padStart(3,'0');
+  const sku = 'RP-' + tipe + '-' + kat + '-' + sub + '-' + tahun + '-' + noUrut + '-' + entitas;
+  const prev = document.getElementById('sku-preview');
+  if (prev) prev.textContent = sku;
+  const kodeEl = document.getElementById('f-kode');
+  if (kodeEl && !kodeEl.dataset.manualEdit) kodeEl.value = sku;
+}
+
+function copySKU() {
+  const sku = document.getElementById('sku-preview')?.textContent || '';
+  if (document.getElementById('f-kode')) document.getElementById('f-kode').value = sku;
+  navigator.clipboard.writeText(sku).catch(()=>{});
+  toast('✅ SKU disalin ke kolom Kode');
+}
+
 function openAddSheet() {
   if (USER.role !== 'admin') { toast('⚠ Hanya admin yang bisa menambah aset', 'warn'); return; }
-  editId = null;
-  pendPhoto = null;
+  editId = null; pendPhoto = null;
   document.getElementById('sh-asset-title').textContent = 'Tambah Aset Baru';
-  ['f-nama','f-kode','f-lokasi','f-pj','f-seri','f-gdrive','f-ket'].forEach(i => { const el = document.getElementById(i); if(el) el.value = ''; });
+  ['f-nama','f-merek','f-model','f-seri','f-sku-lama','f-ruangan','f-gdrive','f-ket'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
   document.getElementById('f-nilai').value = '';
-  document.getElementById('f-tgl').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-masa-manfaat').value = '10';
   document.getElementById('f-id').value = '';
-  document.getElementById('f-kat').value = 'Mesin Produksi';
+  document.getElementById('f-tgl').value = new Date().getFullYear();
+  document.getElementById('f-kat-code').value = 'MSN';
   document.getElementById('f-kondisi').value = 'Baik';
-  document.getElementById('f-status').value = 'Aktif';
+  document.getElementById('f-kondisi-beli').value = 'Baru';
+  document.getElementById('f-status').value = 'AKTIF';
+  document.getElementById('f-entitas').value = 'DMB';
+  const kodeEl = document.getElementById('f-kode');
+  if (kodeEl) { kodeEl.value = ''; delete kodeEl.dataset.manualEdit; }
+  setTipeAset('AT');
+  updateSubKat();
   resetPhoto();
   openSheet('sh-asset');
 }
@@ -979,22 +1141,39 @@ function openAddSheet() {
 function openEditSheet(id) {
   if (USER.role !== 'admin') { toast('⚠ Hanya admin yang bisa edit aset', 'warn'); return; }
   const a = ASSETS[id]; if (!a) return;
-  editId = id;
-  pendPhoto = null;
+  editId = id; pendPhoto = null;
   document.getElementById('sh-asset-title').textContent = 'Edit Aset';
   document.getElementById('f-id').value = id;
-  document.getElementById('f-nama').value = a.nama || '';
-  document.getElementById('f-kode').value = a.kode || '';
-  document.getElementById('f-lokasi').value = a.lokasi || '';
-  document.getElementById('f-pj').value = a.pj || '';
-  document.getElementById('f-seri').value = a.seri || '';
-  document.getElementById('f-gdrive').value = a.gdrive || '';
-  document.getElementById('f-ket').value = a.keterangan || '';
-  document.getElementById('f-nilai').value = a.nilai || '';
-  document.getElementById('f-tgl').value = a.tgl || '';
-  document.getElementById('f-kat').value = a.kategori || 'Mesin Produksi';
+  document.getElementById('f-nama').value    = a.nama || '';
+  document.getElementById('f-kode').value    = a.kode || '';
+  document.getElementById('f-sku-lama').value = a.sku_lama || '';
+  document.getElementById('f-merek').value   = a.merek || '';
+  document.getElementById('f-model').value   = a.model || '';
+  document.getElementById('f-seri').value    = a.serial || '';
+  document.getElementById('f-ruangan').value = a.ruangan || '';
+  document.getElementById('f-gdrive').value  = a.gdrive || '';
+  document.getElementById('f-ket').value     = a.keterangan || '';
+  document.getElementById('f-nilai').value   = a.nilai || '';
+  document.getElementById('f-masa-manfaat').value = a.masa_manfaat || '10';
   document.getElementById('f-kondisi').value = a.kondisi || 'Baik';
-  document.getElementById('f-status').value = a.status || 'Aktif';
+  document.getElementById('f-kondisi-beli').value = a.kondisi_beli || 'Baru';
+  document.getElementById('f-status').value  = a.status || 'AKTIF';
+  const parts = String(a.kode||'').split('-');
+  if (parts.length >= 7) {
+    setTipeAset(parts[1]);
+    if (document.getElementById('f-kat-code')) document.getElementById('f-kat-code').value = parts[2];
+    updateSubKat();
+    if (document.getElementById('f-sub-code')) document.getElementById('f-sub-code').value = parts[3];
+    if (document.getElementById('f-entitas'))  document.getElementById('f-entitas').value = parts[parts.length-1];
+    document.getElementById('f-tgl').value = '20' + parts[4];
+    document.getElementById('f-cabang').value = ENTITAS_MAP[parts[parts.length-1]] || '';
+  } else {
+    setTipeAset(a.tipe_aset || 'AT');
+    updateSubKat();
+    document.getElementById('f-tgl').value = a.tahun || new Date().getFullYear();
+    if (document.getElementById('f-entitas')) document.getElementById('f-entitas').value = a.entitas || 'DMB';
+  }
+  document.getElementById('f-kode').dataset.manualEdit = '1';
   resetPhoto();
   const ps = getPhotoSrc(a, 'w400');
   if (ps) {
@@ -1010,59 +1189,58 @@ async function saveAsset() {
   const nama = document.getElementById('f-nama').value.trim();
   const kode = document.getElementById('f-kode').value.trim();
   if (!nama) { toast('⚠ Nama aset wajib diisi!', 'warn'); return; }
-  if (!kode) { toast('⚠ Kode aset wajib diisi!', 'warn'); return; }
-
-  // Cek duplikat kode
+  if (!kode) { toast('⚠ Kode SKU wajib diisi!', 'warn'); return; }
   const dup = Object.entries(ASSETS).find(([id, a]) => a.kode?.toLowerCase() === kode.toLowerCase() && id !== editId);
   if (dup) { toast('⚠ Kode "' + kode + '" sudah dipakai aset lain!', 'warn'); return; }
-
   const btn = document.getElementById('save-btn');
   btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
-
   try {
-    // Kompres foto jika ada
     let photoUrl = editId ? (ASSETS[editId]?.photo_url || '') : '';
-    if (pendPhoto) {
-      toast('⏳ Memproses foto...');
-      photoUrl = await compressPhoto(pendPhoto);
-    }
-
-    const now = Date.now();
+    if (pendPhoto) { toast('⏳ Memproses foto...'); photoUrl = await compressPhoto(pendPhoto); }
+    const now     = Date.now();
+    const tipe    = document.getElementById('f-tipe-aset').value;
+    const kat     = document.getElementById('f-kat-code').value;
+    const entitas = document.getElementById('f-entitas').value;
+    const tahun   = parseInt(document.getElementById('f-tgl').value) || new Date().getFullYear();
+    const cabang  = ENTITAS_MAP[entitas] || entitas;
+    const ruangan = document.getElementById('f-ruangan').value.trim();
+    const lokasi  = ruangan ? cabang + ' — ' + ruangan : cabang;
     const asset = {
       nama, kode,
-      kategori:   document.getElementById('f-kat').value,
-      lokasi:     document.getElementById('f-lokasi').value.trim(),
-      kondisi:    document.getElementById('f-kondisi').value,
-      status:     document.getElementById('f-status').value,
-      pj:         document.getElementById('f-pj').value.trim(),
-      seri:       document.getElementById('f-seri').value.trim(),
-      nilai:      parseFloat(document.getElementById('f-nilai').value) || 0,
-      tgl:        document.getElementById('f-tgl').value,
-      gdrive:     document.getElementById('f-gdrive').value.trim(),
-      photo_url:  photoUrl,
-      keterangan: document.getElementById('f-ket').value.trim(),
-      updated_at: now
+      tipe_aset:    tipe,
+      sku_lama:     document.getElementById('f-sku-lama').value.trim(),
+      kategori:     KAT_LABEL[kat] || kat,
+      kat_code:     kat,
+      sub_code:     document.getElementById('f-sub-code').value,
+      entitas, cabang, ruangan, lokasi,
+      kondisi:      document.getElementById('f-kondisi').value,
+      kondisi_beli: document.getElementById('f-kondisi-beli').value,
+      status:       document.getElementById('f-status').value,
+      merek:        document.getElementById('f-merek').value.trim(),
+      model:        document.getElementById('f-model').value.trim(),
+      serial:       document.getElementById('f-seri').value.trim(),
+      nilai:        parseFloat(document.getElementById('f-nilai').value) || 0,
+      masa_manfaat: parseInt(document.getElementById('f-masa-manfaat').value) || 10,
+      tahun,
+      tgl:          tahun + '-01-01',
+      gdrive:       document.getElementById('f-gdrive').value.trim(),
+      photo_url:    photoUrl,
+      keterangan:   document.getElementById('f-ket').value.trim(),
+      updated_at:   now
     };
-
     if (!editId) asset.created_at = now;
-    closeSheet('sh-asset');
-    resetPhoto();
-
+    closeSheet('sh-asset'); resetPhoto();
     if (!isDemo && DB) {
-      // Tulis ke Firebase — listener akan update UI di SEMUA device secara otomatis
-      const ref = editId ? DB.ref('assets/' + editId) : DB.ref('assets').push();
+      const ref = editId ? DB.ref('assets/'+editId) : DB.ref('assets').push();
       const pid = editId || ref.key;
       await ref.set({ ...(editId ? { created_at: ASSETS[editId]?.created_at || now } : {}), ...asset });
-      if (!editId) {
-        pushEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
-      }
+      if (!editId) pushEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi, catatan: 'Registrasi — ' + tipe + ' | ' + entitas });
       toast('✅ Aset "' + nama + '" tersimpan!');
     } else {
       const pid = editId || ('L' + now);
       ASSETS[pid] = asset;
-      if (!editId) pushEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi: asset.lokasi, catatan: 'Aset baru didaftarkan' });
-      saveDemo();
-      refreshAll();
+      if (!editId) pushEvent({ asset_id: pid, asset_kode: kode, asset_nama: nama, type: 'REGISTRASI', kondisi: asset.kondisi, lokasi, catatan: 'Registrasi — ' + tipe + ' | ' + entitas });
+      saveDemo(); refreshAll();
       toast('✅ Aset "' + nama + '" tersimpan!');
     }
   } catch(e) {
